@@ -808,7 +808,22 @@ for (var index in _selectedIndices) {
     );
 
     if (result != null) {
-      _loadApps();
+      try {
+        final db = context.read<DatabaseService>();
+        await db.updateApp(result);
+        _loadApps();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('App updated: ${result.displayName}')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving: $e')),
+          );
+        }
+      }
     }
   }
 
