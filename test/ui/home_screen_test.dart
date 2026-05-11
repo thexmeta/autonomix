@@ -24,7 +24,15 @@ class MockDatabaseService extends DatabaseService {
   }
 
   @override
-  Future<int> addApp(String repoOwner, String repoName, String displayName) async {
+  Future<int> addApp(
+    String repoOwner,
+    String repoName,
+    String displayName, {
+    String? assetFilterPattern,
+    String? tagPrefix,
+    List<String> architectures = const [],
+    bool includePrerelease = false,
+  }) async {
     return 1;
   }
 }

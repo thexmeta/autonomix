@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Autonomix
+Comment=Linux package manager for GitHub releases
+Exec=/opt/autonomix/bundle/autonomix
+Icon=autonomix
+Path=/opt/autonomix
+Terminal=false
+Categories=Utility;PackageManager;
+Keywords=package;github;release;manager;

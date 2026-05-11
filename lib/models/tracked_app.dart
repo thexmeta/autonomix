@@ -12,6 +12,14 @@ class TrackedApp {
   final String? packageName;
   final DateTime? lastChecked;
   final DateTime createdAt;
+  final DateTime? latestReleaseDate;
+  final String? fetchedPackage;
+
+  // Advanced filtering fields
+  final String? assetFilterPattern;
+  final String? tagPrefix;
+  final List<String> architectures;
+  final bool includePrerelease;
 
   TrackedApp({
     this.id,
@@ -25,18 +33,21 @@ class TrackedApp {
     this.packageName,
     this.lastChecked,
     required this.createdAt,
-  });
+    this.latestReleaseDate,
+    this.fetchedPackage,
+    this.assetFilterPattern,
+    this.tagPrefix,
+    List<String>? architectures,
+    this.includePrerelease = false,
+  }) : architectures = architectures ?? [];
 
   String get repoUrl => 'https://github.com/$repoOwner/$repoName';
 
   bool get hasUpdate {
     if (installedVersion == null || latestVersion == null) return false;
-    
     final installed = _normalizeVersion(installedVersion!);
     final latest = _normalizeVersion(latestVersion!);
-    
     if (installed == latest) return false;
-    
     return _isNewerVersion(latest, installed);
   }
 
@@ -69,6 +80,12 @@ class TrackedApp {
       'package_name': packageName,
       'last_checked': lastChecked?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
+      'latest_release_date': latestReleaseDate?.toIso8601String(),
+      'fetched_package': fetchedPackage,
+      'asset_filter_pattern': assetFilterPattern,
+      'tag_prefix': tagPrefix,
+      'architectures': architectures,
+      'include_prerelease': includePrerelease,
     };
   }
 
@@ -83,13 +100,19 @@ class TrackedApp {
       installType: InstallType.fromString(map['install_type'] as String?),
       launchCommand: map['launch_command'] as String?,
       packageName: map['package_name'] as String?,
-      lastChecked: map['last_checked'] != null 
-          ? DateTime.parse(map['last_checked'] as String) 
-          : null,
+      lastChecked: map['last_checked'] != null ? DateTime.parse(map['last_checked'] as String) : null,
       createdAt: DateTime.parse(map['created_at'] as String),
+      latestReleaseDate: map['latest_release_date'] != null ? DateTime.parse(map['latest_release_date'] as String) : null,
+      fetchedPackage: map['fetched_package'] as String?,
+      assetFilterPattern: map['asset_filter_pattern'] as String?,
+      tagPrefix: map['tag_prefix'] as String?,
+      architectures: map['architectures'] != null
+          ? List<String>.from(map['architectures'] as List)
+          : [],
+      includePrerelease: map['include_prerelease'] as bool? ?? false,
     );
   }
-  
+
   TrackedApp copyWith({
     int? id,
     String? repoOwner,
@@ -102,6 +125,12 @@ class TrackedApp {
     String? packageName,
     DateTime? lastChecked,
     DateTime? createdAt,
+    DateTime? latestReleaseDate,
+    String? fetchedPackage,
+    String? assetFilterPattern,
+    String? tagPrefix,
+    List<String>? architectures,
+    bool? includePrerelease,
   }) {
     return TrackedApp(
       id: id ?? this.id,
@@ -115,6 +144,45 @@ class TrackedApp {
       packageName: packageName ?? this.packageName,
       lastChecked: lastChecked ?? this.lastChecked,
       createdAt: createdAt ?? this.createdAt,
+      latestReleaseDate: latestReleaseDate ?? this.latestReleaseDate,
+      fetchedPackage: fetchedPackage ?? this.fetchedPackage,
+      assetFilterPattern: assetFilterPattern ?? this.assetFilterPattern,
+      tagPrefix: tagPrefix ?? this.tagPrefix,
+      architectures: architectures ?? this.architectures,
+      includePrerelease: includePrerelease ?? this.includePrerelease,
     );
+  }
+
+  /// Validates the asset filter pattern (glob pattern)
+  static bool isValidFilterPattern(String? pattern) {
+    if (pattern == null || pattern.isEmpty) return true;
+    // Basic validation - should contain at least one wildcard or extension
+    return pattern.contains('*') || pattern.contains('?') || pattern.contains('.');
+  }
+
+  /// Validates the tag prefix
+  static bool isValidTagPrefix(String? prefix) {
+    if (prefix == null || prefix.isEmpty) return true;
+    // Tag prefix should not contain special characters
+    return RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(prefix);
+  }
+
+  /// Validates all filter settings
+  static String? validateFilterSettings({
+    String? assetFilterPattern,
+    String? tagPrefix,
+    List<String>? architectures,
+  }) {
+    if (assetFilterPattern != null && 
+        assetFilterPattern.isNotEmpty && 
+        !isValidFilterPattern(assetFilterPattern)) {
+      return 'Invalid asset filter pattern. Use wildcards like * or ?';
+    }
+    
+    if (tagPrefix != null && !isValidTagPrefix(tagPrefix)) {
+      return 'Invalid tag prefix. Use only alphanumeric characters, hyphens, and underscores.';
+    }
+    
+    return null;
   }
 }

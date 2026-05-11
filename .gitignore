@@ -8,6 +8,11 @@
 .buildlog/
 .history
 .svn/
+.beads/
+.git/
+.github/
+.vscode/
+
 
 # IntelliJ
 *.iml
@@ -33,3 +38,23 @@
 
 # FVM Version Cache
 .fvm/
+
+# 1. Block recursive state ingestion (CRITICAL for OOM)
+.specify/workflows/runs/
+*.jsonl
+state.json
+
+# 2. Block native scaffolding from Dart-focused agents
+linux/
+windows/
+macos/
+
+# 3. Block external tool state
+.tre/
+AGENTS.md
+ANTI_PATTERNS.md
+docs/
+.kilo/
+.vscode/
+.vscode/settings.json
+scripts/setup-build.sh

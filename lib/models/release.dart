@@ -17,6 +17,26 @@ class Release {
     required this.assets,
   });
 
+  Release copyWith({
+    String? tagName,
+    String? name,
+    String? body,
+    DateTime? publishedAt,
+    bool? prerelease,
+    bool? draft,
+    List<ReleaseAsset>? assets,
+  }) {
+    return Release(
+      tagName: tagName ?? this.tagName,
+      name: name ?? this.name,
+      body: body ?? this.body,
+      publishedAt: publishedAt ?? this.publishedAt,
+      prerelease: prerelease ?? this.prerelease,
+      draft: draft ?? this.draft,
+      assets: assets ?? this.assets,
+    );
+  }
+
   factory Release.fromJson(Map<String, dynamic> json) {
     return Release(
       tagName: json['tag_name'] as String,
