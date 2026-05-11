@@ -231,11 +231,11 @@ class _FilterPreviewState extends State<FilterPreview> {
           const SizedBox(height: 8),
         ],
 
-        // Asset list (first 3)
+        // Asset list
         if (assetCount > 0) ...[
           const Text('Assets:', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          ...(_latestRelease!.assets.take(3).map((asset) {
+          ...(_latestRelease!.assets.map((asset) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Row(
@@ -253,14 +253,6 @@ class _FilterPreviewState extends State<FilterPreview> {
               ),
             );
           }).toList()),
-          if (assetCount > 3)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '... and ${assetCount - 3} more',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
         ],
       ],
     );

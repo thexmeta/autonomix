@@ -9,7 +9,7 @@ set -e
 
 # === Configuration ===
 APP_NAME="autonomix"
-VERSION="0.3.7-b1"
+VERSION="0.3.7-b4"
 ARCH="amd64"
 MAINTAINER="Autonomix Team"
 DESCRIPTION="A Linux package manager for GitHub releases"

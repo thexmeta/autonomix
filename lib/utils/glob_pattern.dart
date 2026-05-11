@@ -2,9 +2,14 @@ bool matchesGlobPattern(String input, String pattern) {
   if (pattern.isEmpty) return true;
   if (input.isEmpty) return pattern == '*';
 
-  final regexPattern = _globToRegex(pattern);
-  final regex = RegExp(regexPattern, caseSensitive: false);
-  return regex.hasMatch(input);
+  final patterns = pattern.split(',').map((p) => p.trim()).where((p) => p.isNotEmpty);
+  
+  for (final p in patterns) {
+    final regexPattern = _globToRegex(p);
+    final regex = RegExp(regexPattern, caseSensitive: false);
+    if (regex.hasMatch(input)) return true;
+  }
+  return false;
 }
 
 String _globToRegex(String pattern) {

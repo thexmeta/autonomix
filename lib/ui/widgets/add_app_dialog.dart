@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/github_service.dart';
 import '../../services/settings_service.dart';
@@ -138,11 +139,11 @@ class _AddAppDialogState extends State<AddAppDialog> {
         width: 600,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-children: [
-              if (!_hasFetched) ...[
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 // Mode toggle
                 Row(
                   children: [
@@ -195,14 +196,19 @@ children: [
                     IconButton(
                       icon: const Icon(Icons.content_paste),
                       onPressed: () async {
-                        // TODO: Paste from clipboard
+                        final data = await Clipboard.getData(Clipboard.kTextPlain);
+                        if (data != null && data.text != null && data.text!.isNotEmpty) {
+                          setState(() {
+                            _urlController.text = data.text!;
+                          });
+                          _fetchDetails();
+                        }
                       },
                       tooltip: 'Paste from clipboard',
                     ),
                   ],
                 ),
-              ],
-        if (!_hasFetched && _error != null)
+        if (_error != null)
           Text(
             _error!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -293,8 +299,9 @@ children: [
         ],
       ],
     ),
-    ),
-      ),
+            ),
+          ),
+        ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

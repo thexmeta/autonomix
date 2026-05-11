@@ -212,12 +212,6 @@ class _EditAppDialogState extends State<EditAppDialog> {
               onPressed: _isFetching ? null : _fetchDetails,
               tooltip: 'Fetch repository details',
             ),
-            if (_showPreview)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => setState(() {}),
-                tooltip: 'Refresh Preview',
-              ),
           ],
         ),
         if (_fetchError != null)
