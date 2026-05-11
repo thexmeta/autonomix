@@ -7,19 +7,19 @@
 
 set -e
 
-# === Configuration ===
-APP_NAME="autonomix"
-VERSION="0.3.7-b4"
-ARCH="amd64"
-MAINTAINER="Autonomix Team"
-DESCRIPTION="A Linux package manager for GitHub releases"
-
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_DIR/build/linux/x64/release"
 DIST_DIR="$PROJECT_DIR/dist/debian-x64"
 BUILD_ROOT="/tmp/autonomix-build-$$"  # Unique temp directory
+
+# === Configuration ===
+APP_NAME="autonomix"
+VERSION=$(grep '^version:' "$PROJECT_DIR/pubspec.yaml" | awk '{print $2}')
+ARCH="amd64"
+MAINTAINER="Autonomix Team"
+DESCRIPTION="A Linux package manager for GitHub releases"
 
 # Flutter path (FVM)
 FLUTTER_PATH="/home/mxadm/fvm/versions/stable/bin/flutter"
