@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import '../models/install_type.dart';
 import '../models/tracked_app.dart';
+import '../models/tracked_deb_package.dart';
 
 class InstallerService {
   Future<Directory> get _downloadsDir async {
@@ -130,6 +131,14 @@ class InstallerService {
     }
   }
 
+  Future<void> uninstallDebPackage(TrackedDebPackage pkg) async {
+    if (pkg.packageName != null) {
+      await _runPrivileged('dpkg', ['-r', pkg.packageName!]);
+    } else {
+      throw Exception('Uninstall not supported for this package (missing package name)');
+    }
+  }
+
   Future<void> launchApp(TrackedApp app) async {
     if (app.launchCommand != null) {
       // If we have a stored command/path, use it
@@ -167,6 +176,19 @@ class InstallerService {
           }
         }
         throw Exception('Could not launch ${app.repoName}: $e');
+      }
+    }
+  }
+
+  Future<void> launchDebPackage(TrackedDebPackage pkg) async {
+    if (pkg.launchCommand != null) {
+      await Process.start(pkg.launchCommand!, []);
+    } else {
+      // Try running the name as command
+      try {
+        await Process.start(pkg.name, []);
+      } catch (e) {
+        throw Exception('Could not launch ${pkg.name}: $e');
       }
     }
   }

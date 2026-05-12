@@ -68,12 +68,13 @@ class _AddAppDialogState extends State<AddAppDialog> {
       final uri = Uri.parse(url);
       
       // Check if it's a direct deb package URL
-      if (uri.path.endsWith('.deb') || uri.toString().contains('/dl.php') || uri.toString().contains('package=deb')) {
+      if (_isDirectUrl || uri.path.endsWith('.deb') || uri.toString().contains('/dl.php') || uri.toString().contains('package=deb')) {
         // Direct deb package URL - extract name from URL
         final filename = uri.path.split('/').last;
-        final displayName = filename.isEmpty ? 'Custom Package' : filename.replaceAll('.deb', '');
+        final displayName = filename.isEmpty || filename == '.deb' ? 'Custom Package' : filename.replaceAll('.deb', '');
         
         setState(() {
+          if (!_isDirectUrl) _isDirectUrl = true; // Auto-switch if detected
           _nameController.text = displayName;
           _hasFetched = true;
           _isFetching = false;
@@ -218,77 +219,84 @@ class _AddAppDialogState extends State<AddAppDialog> {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         if (_hasFetched) ...[
-          TextFormField(
-            controller: _ownerController,
-            decoration: const InputDecoration(labelText: 'Repo Owner'),
-            validator: (v) => v?.isEmpty == true ? 'Required' : null,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _repoController,
-            decoration: const InputDecoration(labelText: 'Repo Name'),
-            validator: (v) => v?.isEmpty == true ? 'Required' : null,
-          ),
-          const SizedBox(height: 12),
+          if (!_isDirectUrl) ...[
+            TextFormField(
+              controller: _ownerController,
+              decoration: const InputDecoration(labelText: 'Repo Owner'),
+              validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _repoController,
+              decoration: const InputDecoration(labelText: 'Repo Name'),
+              validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+          ],
           TextFormField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Display Name'),
             validator: (v) => v?.isEmpty == true ? 'Required' : null,
           ),
           const SizedBox(height: 16),
-          // Asset Filter Pattern - Always visible for easy access
-          TextFormField(
-            controller: _assetFilterController,
-            decoration: const InputDecoration(
-              labelText: 'Asset Filter Pattern',
-              hintText: '*.deb, *amd64*, *linux*',
-              helperText: 'Filter release assets by filename pattern (e.g., *.deb for Debian packages)',
-              prefixIcon: Icon(Icons.filter_alt),
+          if (!_isDirectUrl) ...[
+            const SizedBox(height: 16),
+            // Asset Filter Pattern - Always visible for easy access
+            TextFormField(
+              controller: _assetFilterController,
+              decoration: const InputDecoration(
+                labelText: 'Asset Filter Pattern',
+                hintText: '*.deb, *amd64*, *linux*',
+                helperText: 'Filter release assets by filename pattern (e.g., *.deb for Debian packages)',
+                prefixIcon: Icon(Icons.filter_alt),
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 16),
           ExpansionTile(
-            title: const Text('Advanced Filters'),
-            subtitle: const Text('Tag prefix, architectures, pre-releases'),
+            title: const Text('Advanced Settings'),
+            subtitle: Text(_isDirectUrl ? 'System detection' : 'Tag prefix, architectures, pre-releases'),
             initiallyExpanded: _showFilters,
             onExpansionChanged: (expanded) {
               setState(() => _showFilters = expanded);
             },
             children: [
-              TextFormField(
-                controller: _tagPrefixController,
-                decoration: const InputDecoration(
-                  labelText: 'Tag Prefix',
-                  hintText: 'v, release-, app-v, etc.',
-                  helperText: 'Only consider releases with this tag prefix',
+              if (!_isDirectUrl) ...[
+                TextFormField(
+                  controller: _tagPrefixController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tag Prefix',
+                    hintText: 'v, release-, app-v, etc.',
+                    helperText: 'Only consider releases with this tag prefix',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Architectures', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _availableArchitectures.map((arch) {
-                  final selected = _selectedArchitectures.contains(arch);
-                  return FilterChip(
-                    label: Text(arch),
-                    selected: selected,
-                    onSelected: (_) => _toggleArchitecture(arch),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              CheckboxListTile(
-                title: const Text('Include Pre-releases'),
-                subtitle: const Text('Allow beta/alpha releases'),
-                value: _includePrerelease,
-                onChanged: (v) {
-                  setState(() => _includePrerelease = v ?? false);
-                },
-                dense: true,
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+                const Text('Architectures', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _availableArchitectures.map((arch) {
+                    final selected = _selectedArchitectures.contains(arch);
+                    return FilterChip(
+                      label: Text(arch),
+                      selected: selected,
+                      onSelected: (_) => _toggleArchitecture(arch),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  title: const Text('Include Pre-releases'),
+                  subtitle: const Text('Allow beta/alpha releases'),
+                  value: _includePrerelease,
+                  onChanged: (v) {
+                    setState(() => _includePrerelease = v ?? false);
+                  },
+                  dense: true,
+                ),
+                const SizedBox(height: 12),
+              ],
               const Text('System Detection (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextFormField(
@@ -311,15 +319,15 @@ class _AddAppDialogState extends State<AddAppDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          // Filter Preview - shows what package will be fetched
-          FilterPreview(
-            owner: _ownerController.text,
-            repo: _repoController.text,
-            assetFilterPattern: _assetFilterController.text.isEmpty ? null : _assetFilterController.text,
-            tagPrefix: _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
-            architectures: _selectedArchitectures.toList(),
-            includePrerelease: _includePrerelease,
-          ),
+          if (!_isDirectUrl)
+            FilterPreview(
+              owner: _ownerController.text,
+              repo: _repoController.text,
+              assetFilterPattern: _assetFilterController.text.isEmpty ? null : _assetFilterController.text,
+              tagPrefix: _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
+              architectures: _selectedArchitectures.toList(),
+              includePrerelease: _includePrerelease,
+            ),
         ],
       ],
     ),
@@ -336,13 +344,15 @@ class _AddAppDialogState extends State<AddAppDialog> {
             onPressed: () {
               if (_formKey.currentState!.validate()) {
                 Navigator.pop(context, {
-                  'owner': _ownerController.text,
-                  'repo': _repoController.text,
+                  'isDirectUrl': _isDirectUrl,
+                  'owner': _isDirectUrl ? '' : _ownerController.text,
+                  'repo': _isDirectUrl ? '' : _repoController.text,
                   'name': _nameController.text,
-                  'assetFilterPattern': _assetFilterController.text.isEmpty ? null : _assetFilterController.text,
-                  'tagPrefix': _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
-                  'architectures': _selectedArchitectures.toList(),
-                  'includePrerelease': _includePrerelease,
+                  'url': _urlController.text,
+                  'assetFilterPattern': _isDirectUrl ? null : (_assetFilterController.text.isEmpty ? null : _assetFilterController.text),
+                  'tagPrefix': _isDirectUrl ? null : (_tagPrefixController.text.isEmpty ? null : _tagPrefixController.text),
+                  'architectures': _isDirectUrl ? [] : _selectedArchitectures.toList(),
+                  'includePrerelease': _isDirectUrl ? false : _includePrerelease,
                   'launchCommand': _launchCommandController.text.isEmpty ? null : _launchCommandController.text,
                   'packageName': _packageNameController.text.isEmpty ? null : _packageNameController.text,
                 });

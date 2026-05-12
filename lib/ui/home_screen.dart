@@ -11,15 +11,19 @@ import '../services/installer_service.dart';
 import '../services/settings_service.dart';
 import '../services/debug_logger.dart';
 import '../models/tracked_app.dart';
+import '../models/tracked_deb_package.dart';
 import '../models/install_type.dart';
 import '../models/release.dart';
 import '../models/batch_operation_result.dart';
 import '../services/external_app_checker.dart';
 import 'widgets/add_app_dialog.dart';
 import 'widgets/app_list_item.dart';
+import 'widgets/deb_package_list_item.dart';
+import 'widgets/deb_package_details_sheet.dart';
 import '../widgets/theme_selector.dart';
 import '../widgets/batch_action_bar.dart';
 import 'widgets/edit_app_dialog.dart';
+import 'widgets/edit_deb_package_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,9 +34,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<TrackedApp> _apps = [];
+  List<TrackedDebPackage> _debPackages = [];
   bool _isLoading = true;
   bool _isMultiSelectMode = false;
-  Set<int> _selectedIndices = {};
+  Set<int> _selectedIndices = {}; // Indices for _apps
+  Set<int> _selectedDebIndices = {}; // Indices for _debPackages
   bool _startupUpdateChecked = false;
   String _appVersion = '';
 
@@ -58,12 +64,14 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final db = context.read<DatabaseService>();
       final apps = await db.getAllApps();
+      final debPackages = await db.getAllDebPackages();
       setState(() {
         _apps = apps;
+        _debPackages = debPackages;
         _isLoading = false;
       });
       // Auto-check for updates on startup (once per session)
-      if (!_startupUpdateChecked && apps.isNotEmpty) {
+      if (!_startupUpdateChecked && (apps.isNotEmpty || debPackages.isNotEmpty)) {
         _startupUpdateChecked = true;
         _checkAllUpdatesOnStartup();
       }
@@ -82,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isMultiSelectMode = !_isMultiSelectMode;
       if (!_isMultiSelectMode) {
         _selectedIndices.clear();
+        _selectedDebIndices.clear();
       }
     });
   }
@@ -92,6 +101,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedIndices.remove(index);
       } else {
         _selectedIndices.add(index);
+      }
+    });
+  }
+
+  void _toggleDebSelection(int index) {
+    setState(() {
+      if (_selectedDebIndices.contains(index)) {
+        _selectedDebIndices.remove(index);
+      } else {
+        _selectedDebIndices.add(index);
       }
     });
   }
@@ -241,24 +260,16 @@ Future<void> _deleteApp(int index) async {
   }
 
 Future<void> _batchDelete() async {
-    await dlog('BATCH_DELETE', '=== START _batchDelete ===', data: {
-      'selected_count': _selectedIndices.length.toString(),
-      'apps_length': _apps.length.toString(),
-    });
-
-    if (_selectedIndices.isEmpty) {
-      await dlog('BATCH_DELETE', 'No selected indices');
-      return;
-    }
+    if (_selectedIndices.isEmpty && _selectedDebIndices.isEmpty) return;
+    
+    final totalCount = _selectedIndices.length + _selectedDebIndices.length;
     
     try {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Batch Delete'),
-          content: Text(
-            'Remove ${_selectedIndices.length} apps from your tracked list?',
-          ),
+          content: Text('Remove $totalCount items from your tracked list?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -272,72 +283,58 @@ Future<void> _batchDelete() async {
         ),
       );
 
-      if (confirm != true) {
-        await dlog('BATCH_DELETE', 'User cancelled');
-        return;
-      }
+      if (confirm != true) return;
 
       final db = context.read<DatabaseService>();
       int successCount = 0;
       int failCount = 0;
 
-      // Get apps to delete first (before modifying the list)
+      // Apps to delete
       final appsToDelete = <TrackedApp>[];
       for (var index in _selectedIndices) {
         if (index >= 0 && index < _apps.length) {
           appsToDelete.add(_apps[index]);
-          await dlog('BATCH_DELETE', 'Added to delete queue', data: {
-            'index': index.toString(),
-            'appId': _apps[index].id?.toString() ?? 'null',
-          });
-        } else {
-          await dlog('BATCH_DELETE', 'Invalid index skipped', data: {'index': index.toString()});
         }
       }
 
-      await dlog('BATCH_DELETE', 'Starting deletion loop', data: {
-        'apps_to_delete': appsToDelete.length.toString(),
-      });
+      // Deb packages to delete
+      final debsToDelete = <TrackedDebPackage>[];
+      for (var index in _selectedDebIndices) {
+        if (index >= 0 && index < _debPackages.length) {
+          debsToDelete.add(_debPackages[index]);
+        }
+      }
 
-      // Delete each app
+      // Execute deletions
       for (var app in appsToDelete) {
         try {
-          await dlog('BATCH_DELETE', 'Deleting app', data: {'appId': app.id?.toString() ?? 'null'});
           await db.deleteApp(app.id!);
           successCount++;
-        } catch (e, stackTrace) {
-          await dlog('BATCH_DELETE', 'Failed to delete app', data: {
-            'appId': app.id?.toString() ?? 'null',
-            'error': e.toString(),
-            'stack': stackTrace.toString(),
-          });
+        } catch (e) {
           failCount++;
         }
       }
 
-      // Reload the list
-      await dlog('BATCH_DELETE', 'Reloading apps list');
+      for (var pkg in debsToDelete) {
+        try {
+          await db.deleteDebPackage(pkg.id!);
+          successCount++;
+        } catch (e) {
+          failCount++;
+        }
+      }
+
       await _loadApps();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Batch delete: $successCount succeeded, $failCount failed',
-            ),
+            content: Text('Batch delete: $successCount succeeded, $failCount failed'),
           ),
         );
       }
-      
-      await dlog('BATCH_DELETE', '=== END _batchDelete ===', data: {
-        'success': successCount.toString(),
-        'failed': failCount.toString(),
-      });
-    } catch (e, stackTrace) {
-      await dlog('BATCH_DELETE', 'FATAL ERROR', data: {
-        'error': e.toString(),
-        'stack': stackTrace.toString(),
-      });
+    } catch (e) {
+      print('Error in batch delete: $e');
     }
   }
 
@@ -372,13 +369,15 @@ Future<void> _editApp(int index) async {
 
   void _selectAll() {
     setState(() {
-      _selectedIndices = Set.from(List.generate(_apps.length, (i) => i));
+      _selectedIndices = Set.from(Iterable.generate(_apps.length));
+      _selectedDebIndices = Set.from(Iterable.generate(_debPackages.length));
     });
   }
 
   void _deselectAll() {
     setState(() {
       _selectedIndices.clear();
+      _selectedDebIndices.clear();
     });
   }
 
@@ -432,14 +431,14 @@ Future<void> _editApp(int index) async {
   }
 
   Future<void> _batchUpdateCheck() async {
-    if (_selectedIndices.isEmpty) return;
+    if (_selectedIndices.isEmpty && _selectedDebIndices.isEmpty) return;
 
     final gh = context.read<GitHubService>();
     final db = context.read<DatabaseService>();
     
     // Create progress tracker
     final progress = BatchProgress(
-      total: _selectedIndices.length,
+      total: _selectedIndices.length + _selectedDebIndices.length,
       startTime: DateTime.now(),
     );
     
@@ -460,7 +459,7 @@ Future<void> _editApp(int index) async {
     const concurrencyLimit = 5;
     
     try {
-      // Process with limited concurrency
+      // Process GitHub Apps with limited concurrency
       for (var i = 0; i < _selectedIndices.length; i += concurrencyLimit) {
         final batch = _selectedIndices
             .skip(i)
@@ -534,6 +533,23 @@ Future<void> _editApp(int index) async {
         // Small delay to avoid overwhelming the API
         await Future.delayed(const Duration(milliseconds: 100));
       }
+
+      // Process Deb Packages
+      for (var index in _selectedDebIndices) {
+        if (index >= _debPackages.length) continue;
+        final pkg = _debPackages[index];
+        progress.currentOperation = pkg.effectiveDisplayName;
+        
+        try {
+           await db.checkDebPackageUpdates();
+           progress.completed++;
+           progress.successful++;
+        } catch (e) {
+           progress.completed++;
+           progress.failed++;
+        }
+      }
+
     } catch (e) {
       // Handle unexpected errors
     } finally {
@@ -736,6 +752,47 @@ Future<void> _editApp(int index) async {
     _loadApps();
   }
 
+  Future<void> _updateSingleDebPackage(int index) async {
+    if (index < 0 || index >= _debPackages.length) return;
+    
+    final pkg = _debPackages[index];
+    final db = context.read<DatabaseService>();
+    
+    try {
+      final updates = await db.checkDebPackageUpdates();
+      if (updates.containsKey(pkg.name)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('New version found for ${pkg.name}: ${updates[pkg.name]}'),
+              backgroundColor: Colors.green.shade700,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No update found'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating deb package: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+    
+    _loadApps();
+  }
+
   Future<void> _batchInstall() async {
     final gh = context.read<GitHubService>();
     final installer = context.read<InstallerService>();
@@ -743,49 +800,73 @@ Future<void> _editApp(int index) async {
     int successCount = 0;
     int failCount = 0;
 
-for (var index in _selectedIndices) {
-  if (index >= _apps.length) continue;
-  final app = _apps[index];
-  try {
-    final release = await gh.getLatestRelease(
-      app.repoOwner,
-      app.repoName,
-      assetFilterPattern: app.assetFilterPattern,
-      tagPrefix: app.tagPrefix,
-      architectures: app.architectures,
-      includePrerelease: app.includePrerelease,
-    );
-    if (release == null) continue;
+    // Install Apps
+    for (var index in _selectedIndices) {
+      if (index >= _apps.length) continue;
+      final app = _apps[index];
+      try {
+        final release = await gh.getLatestRelease(
+          app.repoOwner,
+          app.repoName,
+          assetFilterPattern: app.assetFilterPattern,
+          tagPrefix: app.tagPrefix,
+          architectures: app.architectures,
+          includePrerelease: app.includePrerelease,
+        );
+        if (release == null) continue;
 
-    // Find first supported asset
-    InstallType? installType;
-    String? assetUrl;
-    String? assetName;
+        // Find first supported asset
+        InstallType? installType;
+        String? assetUrl;
+        String? assetName;
 
-    for (var asset in release.assets) {
-      final type = installer.identifyAssetType(asset.name);
-      if (type != null) {
-        installType = type;
-        assetUrl = asset.browserDownloadUrl;
-        assetName = asset.name;
-        break;
+        for (var asset in release.assets) {
+          final type = installer.identifyAssetType(asset.name);
+          if (type != null) {
+            installType = type;
+            assetUrl = asset.browserDownloadUrl;
+            assetName = asset.name;
+            break;
+          }
+        }
+
+        if (installType == null || assetUrl == null) continue;
+
+        final file = await installer.downloadFile(assetUrl, assetName!);
+        final result = await installer.installPackage(file, installType);
+
+        final updatedApp = app.copyWith(
+          installedVersion: release.tagName,
+          installType: installType,
+          launchCommand: result.launchCommand,
+          packageName: result.packageName,
+          lastChecked: DateTime.now(),
+        );
+        await db.updateApp(updatedApp);
+        successCount++;
+      } catch (e) {
+        failCount++;
       }
     }
 
-    if (installType == null || assetUrl == null) continue;
+    // Install Deb Packages
+    for (var index in _selectedDebIndices) {
+      if (index >= _debPackages.length) continue;
+      final pkg = _debPackages[index];
+      try {
+        final file = await installer.downloadFile(pkg.packageUrl, pkg.name.endsWith('.deb') ? pkg.name : '${pkg.name}.deb');
+        final result = await installer.installPackage(file, InstallType.deb);
+        
+        final version = TrackedDebPackage.extractVersionFromFilename(file.path.split('/').last);
 
-    final file = await installer.downloadFile(assetUrl, assetName!);
-    final result = await installer.installPackage(file, installType);
-
-    final updatedApp = app.copyWith(
-      installedVersion: release.tagName,
-      installType: installType,
-      launchCommand: result.launchCommand,
-      packageName: result.packageName,
-      lastChecked: DateTime.now(),
-    );
-    await db.updateApp(updatedApp);
-    successCount++;
+        final updatedPkg = pkg.copyWith(
+          installedVersion: version ?? pkg.latestVersion,
+          launchCommand: result.launchCommand,
+          packageName: result.packageName,
+          lastChecked: DateTime.now(),
+        );
+        await db.updateDebPackage(updatedPkg);
+        successCount++;
       } catch (e) {
         failCount++;
       }
@@ -807,23 +888,43 @@ for (var index in _selectedIndices) {
 
     if (result != null) {
       try {
-        await context.read<DatabaseService>().addApp(
-          result['owner']!,
-          result['repo']!,
-          result['name']!,
-          assetFilterPattern: result['assetFilterPattern'] as String?,
-          tagPrefix: result['tagPrefix'] as String?,
-          architectures: result['architectures'] as List<String>? ?? [],
-          includePrerelease: result['includePrerelease'] as bool? ?? false,
-          launchCommand: result['launchCommand'] as String?,
-          packageName: result['packageName'] as String?,
-        );
+        final db = context.read<DatabaseService>();
+        if (result['isDirectUrl'] == true) {
+          await db.addDebPackage(
+            name: result['name']!,
+            packageUrl: result['url']!,
+            displayName: result['name'],
+            launchCommand: result['launchCommand'] as String?,
+            packageName: result['packageName'] as String?,
+          );
+        } else {
+          await db.addApp(
+            result['owner']!,
+            result['repo']!,
+            result['name']!,
+            assetFilterPattern: result['assetFilterPattern'] as String?,
+            tagPrefix: result['tagPrefix'] as String?,
+            architectures: result['architectures'] as List<String>? ?? [],
+            includePrerelease: result['includePrerelease'] as bool? ?? false,
+            launchCommand: result['launchCommand'] as String?,
+            packageName: result['packageName'] as String?,
+          );
+        }
         await _loadApps();
-        // Trigger an immediate check for the new app
-        final index = _apps.indexWhere((a) => 
-          a.repoOwner == result['owner'] && a.repoName == result['repo']);
-        if (index != -1) {
-          _updateSingleApp(index);
+        
+        if (result['isDirectUrl'] != true) {
+          // Trigger an immediate check for the new GitHub app
+          final index = _apps.indexWhere((a) => 
+            a.repoOwner == result['owner'] && a.repoName == result['repo']);
+          if (index != -1) {
+            _updateSingleApp(index);
+          }
+        } else {
+          // For direct URLs, we might want to check version too
+          final index = _debPackages.indexWhere((p) => p.packageUrl == result['url']);
+          if (index != -1) {
+             _updateSingleDebPackage(index);
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -867,6 +968,7 @@ for (var index in _selectedIndices) {
     final gh = context.read<GitHubService>();
     final db = context.read<DatabaseService>();
 
+    // Check GitHub Apps
     for (var app in _apps) {
       try {
         final packageInfo = await gh.getLatestReleaseWithPackageInfo(
@@ -891,6 +993,14 @@ for (var index in _selectedIndices) {
         print('Error checking updates for ${app.displayName}: $e');
       }
     }
+
+    // Check Deb Packages
+    try {
+      await db.checkDebPackageUpdates();
+    } catch (e) {
+      print('Error checking deb package updates: $e');
+    }
+
     _loadApps();
   }
 
@@ -899,7 +1009,7 @@ for (var index in _selectedIndices) {
     return Scaffold(
       appBar: AppBar(
         title: _isMultiSelectMode
-            ? Text('${_selectedIndices.length} selected')
+            ? Text('${_selectedIndices.length + _selectedDebIndices.length} selected')
 : Row(
         children: [
           const Text('Autonomix'),
@@ -965,35 +1075,57 @@ for (var index in _selectedIndices) {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _apps.isEmpty
+          : (_apps.isEmpty && _debPackages.isEmpty)
               ? const Center(child: Text('No apps tracked. Add one!'))
     : ListView.builder(
-        itemCount: _apps.length,
+        itemCount: _apps.length + _debPackages.length,
         itemBuilder: (context, index) {
-          return AppListItem(
-            app: _apps[index],
-            isSelected: _isMultiSelectMode && _selectedIndices.contains(index),
-            onEdit: () => _editApp(index),
-            onDelete: () async {
-              if (mounted && index < _apps.length) {
-                _deleteApp(index);
-              }
-            },
-            onUpdate: () => _updateSingleApp(index),
-            onTap: () {
-              if (_isMultiSelectMode) {
-                _toggleSelection(index);
-              } else {
-                _showAppDetails(_apps[index]);
-              }
-            },
-          );
+          if (index < _apps.length) {
+            return AppListItem(
+              app: _apps[index],
+              isSelected: _isMultiSelectMode && _selectedIndices.contains(index),
+              onEdit: () => _editApp(index),
+              onDelete: () async {
+                if (mounted && index < _apps.length) {
+                  _deleteApp(index);
+                }
+              },
+              onUpdate: () => _updateSingleApp(index),
+              onTap: () {
+                if (_isMultiSelectMode) {
+                  _toggleSelection(index);
+                } else {
+                  _showAppDetails(_apps[index]);
+                }
+              },
+            );
+          } else {
+            final debIndex = index - _apps.length;
+            return DebPackageListItem(
+              package: _debPackages[debIndex],
+              isSelected: _isMultiSelectMode && _selectedDebIndices.contains(debIndex),
+              onEdit: () => _editDebPackage(debIndex),
+              onDelete: () async {
+                if (mounted) {
+                  _deleteDebPackage(debIndex);
+                }
+              },
+              onUpdate: () => _updateSingleDebPackage(debIndex),
+              onTap: () {
+                if (_isMultiSelectMode) {
+                  _toggleDebSelection(debIndex);
+                } else {
+                  _showDebDetails(_debPackages[debIndex]);
+                }
+              },
+            );
+          }
         },
       ),
     bottomSheet: _isMultiSelectMode
         ? BatchActionBar(
-            selectedCount: _selectedIndices.length,
-            totalCount: _apps.length,
+            selectedCount: _selectedIndices.length + _selectedDebIndices.length,
+            totalCount: _apps.length + _debPackages.length,
             onSelectAll: _selectAll,
             onDeselectAll: _deselectAll,
             onUpdateAll: _batchUpdateCheck,
@@ -1018,11 +1150,62 @@ for (var index in _selectedIndices) {
     _loadApps();
   }
 
+  Future<void> _showDebDetails(TrackedDebPackage package) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => DebPackageDetailsSheet(package: package),
+    );
+    _loadApps();
+  }
+
+  Future<void> _editDebPackage(int index) async {
+    final pkg = _debPackages[index];
+    final updatedPkg = await showDialog<TrackedDebPackage>(
+      context: context,
+      builder: (context) => EditDebPackageDialog(package: pkg),
+    );
+
+    if (updatedPkg != null) {
+      final db = context.read<DatabaseService>();
+      await db.updateDebPackage(updatedPkg);
+      _loadApps();
+    }
+  }
+
   Future<void> _showSettings(BuildContext context) async {
     await showModalBottomSheet(
       context: context,
       builder: (context) => _SettingsSheet(),
     );
+  }
+
+
+  Future<void> _deleteDebPackage(int index) async {
+    final pkg = _debPackages[index];
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Package'),
+        content: Text('Are you sure you want to stop tracking ${pkg.displayName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final db = context.read<DatabaseService>();
+      await db.deleteDebPackage(pkg.id!);
+      _loadApps();
+    }
   }
 }
 
@@ -1810,7 +1993,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
 
     // Update DB
     final updatedApp = widget.app.copyWith(
-      installedVersion: release!.tagName,
+      installedVersion: release.tagName,
         installType: selectedType,
         launchCommand: result.launchCommand,
         packageName: result.packageName,

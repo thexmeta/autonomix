@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/tracked_app.dart';
 import '../models/app_config.dart';
 import '../models/tracked_deb_package.dart';
+import 'external_app_checker.dart';
 
 class DatabaseService {
   File? _file;
@@ -200,6 +201,8 @@ Future<void> updateApp(TrackedApp app) async {
     required String packageUrl,
     String? displayName,
     bool autoUpdate = false,
+    String? launchCommand,
+    String? packageName,
   }) async {
     final packages = await getAllDebPackages();
 
@@ -216,6 +219,8 @@ Future<void> updateApp(TrackedApp app) async {
       displayName: displayName ?? name,
       createdAt: DateTime.now(),
       autoUpdate: autoUpdate,
+      launchCommand: launchCommand,
+      packageName: packageName,
     );
 
     packages.add(newPackage);
@@ -249,12 +254,15 @@ Future<void> updateApp(TrackedApp app) async {
     for (final pkg in packages) {
       try {
         final latestVersion = await _fetchDebVersion(pkg.packageUrl);
-        if (latestVersion != null) {
+        final installedVersion = await ExternalAppChecker.getExternalDebVersion(pkg);
+        
+        if (latestVersion != null || installedVersion != null) {
           await updateDebPackage(pkg.copyWith(
-            latestVersion: latestVersion,
+            latestVersion: latestVersion ?? pkg.latestVersion,
+            installedVersion: installedVersion ?? pkg.installedVersion,
             lastChecked: DateTime.now(),
           ));
-          if (pkg.installedVersion != null && pkg.installedVersion != latestVersion) {
+          if (latestVersion != null && pkg.installedVersion != null && pkg.installedVersion != latestVersion) {
             updates[pkg.name] = latestVersion;
           }
         }

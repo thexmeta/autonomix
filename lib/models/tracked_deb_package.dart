@@ -13,6 +13,8 @@ class TrackedDebPackage {
   final DateTime createdAt;
   final String? checksum;
   final bool autoUpdate;
+  final String? packageName;
+  final String? launchCommand;
 
   TrackedDebPackage({
     this.id,
@@ -27,6 +29,8 @@ class TrackedDebPackage {
     required this.createdAt,
     this.checksum,
     this.autoUpdate = false,
+    this.packageName,
+    this.launchCommand,
   });
 
   /// Extract version from filename (e.g., "app_1.2.3_amd64.deb" -> "1.2.3")
@@ -69,6 +73,8 @@ class TrackedDebPackage {
       'created_at': createdAt.toIso8601String(),
       'checksum': checksum,
       'auto_update': autoUpdate,
+      'package_name': packageName,
+      'launch_command': launchCommand,
     };
   }
 
@@ -96,6 +102,8 @@ class TrackedDebPackage {
           : DateTime.parse(map['created_at'] as String),
       checksum: map['checksum'] as String?,
       autoUpdate: map['auto_update'] as bool? ?? false,
+      packageName: map['package_name'] as String?,
+      launchCommand: map['launch_command'] as String?,
     );
   }
 
@@ -112,6 +120,8 @@ class TrackedDebPackage {
     DateTime? createdAt,
     String? checksum,
     bool? autoUpdate,
+    String? packageName,
+    String? launchCommand,
   }) {
     return TrackedDebPackage(
       id: id ?? this.id,
@@ -126,6 +136,8 @@ class TrackedDebPackage {
       createdAt: createdAt ?? this.createdAt,
       checksum: checksum ?? this.checksum,
       autoUpdate: autoUpdate ?? this.autoUpdate,
+      packageName: packageName ?? this.packageName,
+      launchCommand: launchCommand ?? this.launchCommand,
     );
   }
 }

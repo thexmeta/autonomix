@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import '../models/tracked_app.dart';
+import '../models/tracked_deb_package.dart';
 import 'debug_logger.dart';
 
 class ExternalAppChecker {
@@ -12,8 +13,18 @@ class ExternalAppChecker {
 
   /// Checks if the application is installed externally and attempts to find its version.
   static Future<String?> getExternalVersion(TrackedApp app) async {
-    final guesses = _generateNameGuesses(app);
-    dlog('ExternalAppChecker', 'Checking ${app.repoName} (id: ${app.id}) with guesses: $guesses');
+    final guesses = _generateAppGuesses(app);
+    return _checkGuesses(app.repoName, guesses);
+  }
+
+  /// Checks if the deb package is installed externally and attempts to find its version.
+  static Future<String?> getExternalDebVersion(TrackedDebPackage pkg) async {
+    final guesses = _generateDebGuesses(pkg);
+    return _checkGuesses(pkg.name, guesses);
+  }
+
+  static Future<String?> _checkGuesses(String identifier, List<String> guesses) async {
+    dlog('ExternalAppChecker', 'Checking $identifier with guesses: $guesses');
 
     for (final name in guesses) {
       // 1. Try dpkg-query first (useful for deb packages)
@@ -83,11 +94,11 @@ class ExternalAppChecker {
       }
     }
     
-    dlog('ExternalAppChecker', 'No version found for ${app.repoName}');
+    dlog('ExternalAppChecker', 'No version found for $identifier');
     return null;
   }
 
-  static List<String> _generateNameGuesses(TrackedApp app) {
+  static List<String> _generateAppGuesses(TrackedApp app) {
     final guesses = <String>{};
 
     // 1. Explicit package name or launch command
@@ -147,6 +158,44 @@ class ExternalAppChecker {
     if (displayFirst.length > 2) {
       guesses.add(displayFirst);
       guesses.add('$displayFirst.io');
+    }
+
+    return guesses.toList();
+  }
+
+  static List<String> _generateDebGuesses(TrackedDebPackage pkg) {
+    final guesses = <String>{};
+
+    // 1. Explicit package name or launch command
+    if (pkg.packageName != null && pkg.packageName!.isNotEmpty) {
+      guesses.add(pkg.packageName!);
+    }
+    if (pkg.launchCommand != null && pkg.launchCommand!.isNotEmpty) {
+      guesses.add(pkg.launchCommand!.split('/').last);
+      if (!pkg.launchCommand!.contains('/')) {
+        guesses.add(pkg.launchCommand!);
+      }
+    }
+
+    // 2. Name and variations
+    guesses.add(pkg.name.toLowerCase());
+    
+    // Strip common suffixes
+    final cleanName = pkg.name.toLowerCase()
+        .replaceAll(RegExp(r'-(?:go|rust|desktop|linux|app|cli|gui|client|server|bin|bundle)$'), '');
+    if (cleanName != pkg.name.toLowerCase()) {
+      guesses.add(cleanName);
+    }
+
+    // 3. Display name variations
+    if (pkg.displayName != null) {
+      final displayFirst = pkg.displayName!
+          .split(' ')[0]
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]'), '');
+      if (displayFirst.length > 2) {
+        guesses.add(displayFirst);
+      }
     }
 
     return guesses.toList();
