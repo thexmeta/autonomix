@@ -137,17 +137,8 @@ class ExternalAppChecker {
     // 4. Extract name from fetched package filename
     if (app.fetchedPackage != null && app.fetchedPackage!.isNotEmpty) {
       final fileName = app.fetchedPackage!.split('/').last;
-      // Extract everything before first version-like part or first -/_
-      final namePart = fileName.split(RegExp(r'[-_1-9]'))[0].toLowerCase();
-      if (namePart.length > 1) {
-        guesses.add(namePart);
-        guesses.add('$namePart.io');
-      }
-      
-      final firstSegment = fileName.split(RegExp(r'[-_]'))[0].toLowerCase();
-      if (firstSegment.length > 1) {
-        guesses.add(firstSegment);
-      }
+      final guessesFromFilename = extractNameGuessesFromFilename(fileName);
+      guesses.addAll(guessesFromFilename);
     }
 
     // 5. Display name variations (first word)
@@ -160,6 +151,25 @@ class ExternalAppChecker {
       guesses.add('$displayFirst.io');
     }
 
+    return guesses.toList();
+  }
+
+  /// Extracts potential package/app names from a filename
+  static List<String> extractNameGuessesFromFilename(String fileName) {
+    final guesses = <String>{};
+    
+    // Extract everything before first version-like part or first -/_
+    final namePart = fileName.split(RegExp(r'[-_1-9]'))[0].toLowerCase();
+    if (namePart.length > 1) {
+      guesses.add(namePart);
+      guesses.add('$namePart.io');
+    }
+    
+    final firstSegment = fileName.split(RegExp(r'[-_]'))[0].toLowerCase();
+    if (firstSegment.length > 1) {
+      guesses.add(firstSegment);
+    }
+    
     return guesses.toList();
   }
 

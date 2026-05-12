@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../services/github_service.dart';
 import '../../services/settings_service.dart';
+import '../../services/external_app_checker.dart';
 import 'filter_preview.dart';
 
 class AddAppDialog extends StatefulWidget {
@@ -73,9 +74,20 @@ class _AddAppDialogState extends State<AddAppDialog> {
         final filename = uri.path.split('/').last;
         final displayName = filename.isEmpty || filename == '.deb' ? 'Custom Package' : filename.replaceAll('.deb', '');
         
+        final nameGuesses = ExternalAppChecker.extractNameGuessesFromFilename(filename);
+        final guessedName = nameGuesses.isNotEmpty ? nameGuesses.first : null;
+
         setState(() {
           if (!_isDirectUrl) _isDirectUrl = true; // Auto-switch if detected
-          _nameController.text = displayName;
+          if (_nameController.text.isEmpty) {
+            _nameController.text = displayName;
+          }
+          if (_packageNameController.text.isEmpty && guessedName != null) {
+            _packageNameController.text = guessedName;
+          }
+          if (_launchCommandController.text.isEmpty && guessedName != null) {
+            _launchCommandController.text = guessedName;
+          }
           _hasFetched = true;
           _isFetching = false;
         });
@@ -101,7 +113,15 @@ class _AddAppDialogState extends State<AddAppDialog> {
       setState(() {
         _ownerController.text = info['owner']['login'];
         _repoController.text = info['name'];
-        _nameController.text = info['description'] ?? info['name'];
+        if (_nameController.text.isEmpty) {
+          _nameController.text = info['description'] ?? info['name'];
+        }
+        if (_packageNameController.text.isEmpty) {
+          _packageNameController.text = info['name'].toLowerCase();
+        }
+        if (_launchCommandController.text.isEmpty) {
+          _launchCommandController.text = info['name'].toLowerCase();
+        }
         _hasFetched = true;
         _isFetching = false;
       });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/tracked_app.dart';
 import '../../services/github_service.dart';
+import '../../services/external_app_checker.dart';
 import 'filter_preview.dart';
 
 class EditAppDialog extends StatefulWidget {
@@ -76,7 +77,15 @@ class _EditAppDialogState extends State<EditAppDialog> {
       final info = await gh.getRepository(owner, repo);
 
       setState(() {
-        _nameController.text = info['description'] ?? info['name'];
+        if (_nameController.text.trim().isEmpty) {
+          _nameController.text = info['description'] ?? info['name'];
+        }
+        if (_packageNameController.text.trim().isEmpty) {
+          _packageNameController.text = info['name'].toLowerCase();
+        }
+        if (_launchCommandController.text.trim().isEmpty) {
+          _launchCommandController.text = info['name'].toLowerCase();
+        }
         _isFetching = false;
       });
     } catch (e) {
