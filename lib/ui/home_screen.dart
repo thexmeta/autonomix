@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadApps() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final db = context.read<DatabaseService>();
@@ -1748,8 +1749,10 @@ class ProgressController {
   Stream<bool> get stream => _streamController.stream;
   
   void close() {
-    _streamController.add(true);
-    _streamController.close();
+    if (!_streamController.isClosed) {
+      _streamController.add(true);
+      _streamController.close();
+    }
   }
 }
 

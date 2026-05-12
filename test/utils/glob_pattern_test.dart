@@ -162,4 +162,32 @@ void main() {
       expect(result.length, equals(2));
     });
   });
+
+  group('Release Filtering logic', () {
+    test('tag prefix filtering', () {
+      // Logic from GitHubService: lowerTag.contains(searchPrefix)
+      bool matchesTag(String tagName, String prefix) {
+        if (prefix.trim().isEmpty) return true;
+        return tagName.toLowerCase().contains(prefix.trim().toLowerCase());
+      }
+
+      expect(matchesTag('v1.0.0', 'v'), isTrue);
+      expect(matchesTag('v1.0.0', '1.0'), isTrue);
+      expect(matchesTag('v1.0.0', 'V'), isTrue);
+      expect(matchesTag('v1.0.0', '2.0'), isFalse);
+      expect(matchesTag('app-v1.0.0', 'v1'), isTrue);
+    });
+
+    test('prerelease filtering', () {
+      bool shouldInclude(bool isPrerelease, bool includePrerelease) {
+        if (!includePrerelease && isPrerelease) return false;
+        return true;
+      }
+
+      expect(shouldInclude(true, false), isFalse);
+      expect(shouldInclude(true, true), isTrue);
+      expect(shouldInclude(false, false), isTrue);
+      expect(shouldInclude(false, true), isTrue);
+    });
+  });
 }

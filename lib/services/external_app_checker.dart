@@ -5,7 +5,16 @@ import '../models/tracked_app.dart';
 import '../models/tracked_deb_package.dart';
 import 'debug_logger.dart';
 
+typedef ExternalVersionProvider = Future<String?> Function(TrackedApp app);
+typedef ExternalDebVersionProvider = Future<String?> Function(TrackedDebPackage pkg);
+
 class ExternalAppChecker {
+  /// Provider for app versions, can be overridden for testing
+  static ExternalVersionProvider versionProvider = _defaultVersionProvider;
+  
+  /// Provider for deb package versions, can be overridden for testing
+  static ExternalDebVersionProvider debVersionProvider = _defaultDebVersionProvider;
+
   static final RegExp _versionRegExp = RegExp(
     r'(?:v|version\s+)?(\d+\.\d+(?:\.\d+)?(?:-[a-zA-Z0-9\.\-]+)?)',
     caseSensitive: false,
@@ -13,12 +22,20 @@ class ExternalAppChecker {
 
   /// Checks if the application is installed externally and attempts to find its version.
   static Future<String?> getExternalVersion(TrackedApp app) async {
-    final guesses = _generateAppGuesses(app);
-    return _checkGuesses(app.repoName, guesses);
+    return versionProvider(app);
   }
 
   /// Checks if the deb package is installed externally and attempts to find its version.
   static Future<String?> getExternalDebVersion(TrackedDebPackage pkg) async {
+    return debVersionProvider(pkg);
+  }
+
+  static Future<String?> _defaultVersionProvider(TrackedApp app) async {
+    final guesses = _generateAppGuesses(app);
+    return _checkGuesses(app.repoName, guesses);
+  }
+
+  static Future<String?> _defaultDebVersionProvider(TrackedDebPackage pkg) async {
     final guesses = _generateDebGuesses(pkg);
     return _checkGuesses(pkg.name, guesses);
   }

@@ -64,7 +64,7 @@ class MockGitHubService extends GitHubService {
   }
 
   @override
-  Future<List<Release>> getReleases(String owner, String repo) async {
+  Future<List<Release>> getReleases(String owner, String repo, {int? perPage}) async {
     if (shouldFail) {
       throw Exception(failureMessage ?? 'Simulated GitHub error');
     }

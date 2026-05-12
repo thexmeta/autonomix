@@ -113,6 +113,15 @@ ln -sf /opt/autonomix/bundle/autonomix /usr/local/bin/autonomix
 if [ -d "/usr/share/applications" ]; then
     update-desktop-database /usr/share/applications || true
 fi
+# Update icon cache
+if [ -d "/usr/share/icons/hicolor" ]; then
+    touch /usr/share/icons/hicolor
+    if command -v update-icon-caches &> /dev/null; then
+        update-icon-caches /usr/share/icons/hicolor || true
+    else
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+    fi
+fi
 echo "Autonomix installed successfully!"
 echo "You can now run 'autonomix' from the command line or find it in your applications menu."
 exit 0
@@ -138,6 +147,15 @@ rm -f /usr/local/bin/autonomix
 if [ -d "/usr/share/applications" ]; then
     update-desktop-database /usr/share/applications || true
 fi
+# Update icon cache
+if [ -d "/usr/share/icons/hicolor" ]; then
+    touch /usr/share/icons/hicolor
+    if command -v update-icon-caches &> /dev/null; then
+        update-icon-caches /usr/share/icons/hicolor || true
+    else
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+    fi
+fi
 echo "Autonomix removed successfully!"
 exit 0
 EOF
@@ -152,10 +170,11 @@ Name=Autonomix
 Comment=Linux package manager for GitHub releases
 Exec=/opt/autonomix/bundle/autonomix
 Icon=autonomix
-Path=/opt/autonomix
+Path=/opt/autonomix/bundle
 Terminal=false
-Categories=Utility;PackageManager;
+Categories=System;Utility;PackageManager;
 Keywords=package;github;release;manager;
+StartupWMClass=com.example.autonomix
 EOF
 chmod 0644 "$BUILD_ROOT/usr/share/applications/autonomix.desktop"
 
@@ -186,8 +205,8 @@ build_debian_package() {
     mkdir -p "$DIST_DIR"
     local output_deb="$DIST_DIR/${APP_NAME}_${VERSION}_${ARCH}.deb"
     
-    # Build the package
-    dpkg-deb --build "$BUILD_ROOT" "$output_deb"
+    # Build the package with root ownership
+    dpkg-deb --root-owner-group --build "$BUILD_ROOT" "$output_deb"
     
     if [ ! -f "$output_deb" ]; then
         log_error "Failed to create .deb package"
