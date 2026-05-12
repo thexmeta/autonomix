@@ -156,12 +156,12 @@ class _HomeScreenState extends State<HomeScreen> {
           TextButton(
             onPressed: () async {
               await dlogClear();
-              if (mounted) Navigator.pop(context);
+              if (mounted) Navigator.of(context).pop();
             },
             child: const Text('Clear Log'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
           ),
         ],
@@ -202,11 +202,11 @@ Future<void> _deleteApp(int index) async {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Remove'),
             ),
           ],
@@ -272,11 +272,11 @@ Future<void> _batchDelete() async {
           content: Text('Remove $totalCount items from your tracked list?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Remove'),
             ),
           ],
@@ -554,6 +554,9 @@ Future<void> _editApp(int index) async {
       // Handle unexpected errors
     } finally {
       dialogController.close();
+      if (mounted) {
+        Navigator.of(context).pop(); // Automatically close progress dialog
+      }
     }
 
     _loadApps();
@@ -677,7 +680,7 @@ Future<void> _editApp(int index) async {
         ),
         actions: [
           FilledButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
           ),
         ],
@@ -1189,11 +1192,11 @@ Future<void> _editApp(int index) async {
         content: Text('Are you sure you want to stop tracking ${pkg.displayName}?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
@@ -1826,7 +1829,10 @@ class _BatchProgressDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => controller.close(),
+          onPressed: () {
+            controller.close();
+            Navigator.of(context).pop();
+          },
           child: const Text('Close'),
         ),
       ],
@@ -1962,7 +1968,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
           title: const Text('Select Package Type'),
           children: candidates.keys.map((type) {
             return SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, type),
+              onPressed: () => Navigator.of(context).pop(type),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
@@ -2002,7 +2008,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
       await db.updateApp(updatedApp);
 
       if (mounted) {
-        Navigator.pop(context); // Close sheet
+        Navigator.of(context).pop(); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Installation successful')),
         );
@@ -2036,11 +2042,11 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
         content: const Text('Are you sure you want to uninstall this app?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Uninstall'),
           ),
         ],
@@ -2076,7 +2082,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
       await context.read<DatabaseService>().updateApp(updatedApp);
 
       if (mounted) {
-        Navigator.pop(context); // Close sheet
+        Navigator.of(context).pop(); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Uninstallation successful')),
         );
@@ -2093,7 +2099,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
             content: Text(e.toString()),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
               ),
             ],
@@ -2106,7 +2112,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
   Future<void> _launch(BuildContext context) async {
     try {
       await context.read<InstallerService>().launchApp(widget.app);
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
         showDialog(
@@ -2116,7 +2122,7 @@ class _AppDetailsSheetState extends State<AppDetailsSheet> {
             content: Text(e.toString()),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
               ),
             ],

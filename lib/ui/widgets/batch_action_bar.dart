@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/tracked_app.dart';
 
 /// Batch Action Bar - displayed when multi-select mode is active
 /// Provides bulk operations for selected apps

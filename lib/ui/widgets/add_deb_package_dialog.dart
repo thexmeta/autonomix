@@ -55,14 +55,14 @@ class _AddDebPackageDialogState extends State<AddDebPackageDialog> {
       }
 
       // Try to extract version from filename
-      final version = TrackedDebPackage.extractVersionFromFilename(filename);
+      TrackedDebPackage.extractVersionFromFilename(filename);
       
       setState(() {
         _isValidating = false;
       });
 
       // Set name from filename if not already set
-      if (_nameController.text.isEmpty) {
+      if (_nameController.text.trim().isEmpty) {
         final displayName = filename.replaceAll(RegExp(r'\.deb$'), '');
         _nameController.text = displayName;
       }
@@ -158,7 +158,7 @@ class _AddDebPackageDialogState extends State<AddDebPackageDialog> {
                         tooltip: 'Validate URL',
                       ),
                       IconButton(
-                        icon: const Icon(Icons.testtube),
+                        icon: const Icon(Icons.science),
                         onPressed: _testUrl,
                         tooltip: 'Test URL',
                       ),
@@ -235,7 +235,7 @@ class _AddDebPackageDialogState extends State<AddDebPackageDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         FilledButton(

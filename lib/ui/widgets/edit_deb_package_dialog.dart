@@ -66,7 +66,7 @@ class _EditDebPackageDialogState extends State<EditDebPackageDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         FilledButton(
@@ -77,7 +77,7 @@ class _EditDebPackageDialogState extends State<EditDebPackageDialog> {
               packageUrl: _urlController.text,
               autoUpdate: _autoUpdate,
             );
-            Navigator.pop(context, updated);
+            Navigator.of(context).pop(updated);
           },
           child: const Text('Save'),
         ),

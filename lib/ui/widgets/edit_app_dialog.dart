@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/tracked_app.dart';
 import '../../services/github_service.dart';
-import '../../services/external_app_checker.dart';
 import 'filter_preview.dart';
 
 class EditAppDialog extends StatefulWidget {
@@ -275,7 +274,7 @@ class _EditAppDialogState extends State<EditAppDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         FilledButton(

@@ -79,7 +79,7 @@ class _AddAppDialogState extends State<AddAppDialog> {
 
         setState(() {
           if (!_isDirectUrl) _isDirectUrl = true; // Auto-switch if detected
-          if (_nameController.text.isEmpty) {
+          if (_nameController.text.trim().isEmpty) {
             _nameController.text = displayName;
           }
           if (_packageNameController.text.isEmpty && guessedName != null) {
@@ -113,7 +113,7 @@ class _AddAppDialogState extends State<AddAppDialog> {
       setState(() {
         _ownerController.text = info['owner']['login'];
         _repoController.text = info['name'];
-        if (_nameController.text.isEmpty) {
+        if (_nameController.text.trim().isEmpty) {
           _nameController.text = info['description'] ?? info['name'];
         }
         if (_packageNameController.text.isEmpty) {
@@ -356,14 +356,14 @@ class _AddAppDialogState extends State<AddAppDialog> {
         ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         if (_hasFetched)
           FilledButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                Navigator.pop(context, {
+                Navigator.of(context).pop({
                   'isDirectUrl': _isDirectUrl,
                   'owner': _isDirectUrl ? '' : _ownerController.text,
                   'repo': _isDirectUrl ? '' : _repoController.text,
