@@ -19,6 +19,8 @@ class _EditAppDialogState extends State<EditAppDialog> {
   late TextEditingController _assetFilterController;
   late TextEditingController _tagPrefixController;
   late TextEditingController _architecturesController;
+  late TextEditingController _launchCommandController;
+  late TextEditingController _packageNameController;
   bool _includePrerelease = false;
   bool _showPreview = false;
   bool _isFetching = false;
@@ -35,6 +37,8 @@ class _EditAppDialogState extends State<EditAppDialog> {
     _architecturesController = TextEditingController(
       text: widget.app.architectures.join(', '),
     );
+    _launchCommandController = TextEditingController(text: widget.app.launchCommand ?? '');
+    _packageNameController = TextEditingController(text: widget.app.packageName ?? '');
     _includePrerelease = widget.app.includePrerelease;
   }
 
@@ -46,6 +50,8 @@ class _EditAppDialogState extends State<EditAppDialog> {
     _assetFilterController.dispose();
     _tagPrefixController.dispose();
     _architecturesController.dispose();
+    _launchCommandController.dispose();
+    _packageNameController.dispose();
     super.dispose();
   }
 
@@ -106,6 +112,8 @@ class _EditAppDialogState extends State<EditAppDialog> {
         tagPrefix: _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
         architectures: architectures,
         includePrerelease: _includePrerelease,
+        launchCommand: _launchCommandController.text.trim().isEmpty ? null : _launchCommandController.text.trim(),
+        packageName: _packageNameController.text.trim().isEmpty ? null : _packageNameController.text.trim(),
       );
 
       if (mounted) {
@@ -189,6 +197,27 @@ class _EditAppDialogState extends State<EditAppDialog> {
               onChanged: (value) {
                 setState(() => _includePrerelease = value);
               },
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const Text('System Detection (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _launchCommandController,
+              decoration: const InputDecoration(
+                labelText: 'Custom Binary/Launch Command',
+                hintText: 'e.g., code, discord, br',
+                helperText: 'Command name to check with "which"',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _packageNameController,
+              decoration: const InputDecoration(
+                labelText: 'Custom Package Name',
+                hintText: 'e.g., code-insiders, discord-canary',
+                helperText: 'Package name to check with "dpkg"',
+              ),
             ),
             const SizedBox(height: 16),
         Row(

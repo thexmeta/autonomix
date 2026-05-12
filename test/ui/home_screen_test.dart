@@ -32,6 +32,8 @@ class MockDatabaseService extends DatabaseService {
     String? tagPrefix,
     List<String> architectures = const [],
     bool includePrerelease = false,
+    String? launchCommand,
+    String? packageName,
   }) async {
     return 1;
   }

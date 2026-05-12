@@ -14,6 +14,7 @@ import '../models/tracked_app.dart';
 import '../models/install_type.dart';
 import '../models/release.dart';
 import '../models/batch_operation_result.dart';
+import '../services/external_app_checker.dart';
 import 'widgets/add_app_dialog.dart';
 import 'widgets/app_list_item.dart';
 import '../widgets/theme_selector.dart';
@@ -398,15 +399,28 @@ Future<void> _editApp(int index) async {
           architectures: app.architectures,
           includePrerelease: app.includePrerelease,
         );
+        
+        String? extVersion = await ExternalAppChecker.getExternalVersion(app);
+        
         if (packageInfo != null) {
           final release = packageInfo['release'] as Release;
           final updatedApp = app.copyWith(
             latestVersion: release.tagName,
+            installedVersion: extVersion ?? app.installedVersion,
             latestReleaseDate: release.publishedAt,
             fetchedPackage: packageInfo['packageName'] as String?,
             lastChecked: DateTime.now(),
           );
           await db.updateApp(updatedApp);
+        } else if (extVersion != null) {
+          // Always update if we found a version and current is different or null
+          if (extVersion != app.installedVersion) {
+            final updatedApp = app.copyWith(
+              installedVersion: extVersion,
+              lastChecked: DateTime.now(),
+            );
+            await db.updateApp(updatedApp);
+          }
         }
       } catch (e) {
         // Silent fail on startup - don't bother user
@@ -468,10 +482,13 @@ Future<void> _editApp(int index) async {
               includePrerelease: app.includePrerelease,
             );
             
+            String? extVersion = await ExternalAppChecker.getExternalVersion(app);
+            
             if (packageInfo != null) {
               final release = packageInfo['release'] as Release;
               final updatedApp = app.copyWith(
                 latestVersion: release.tagName,
+                installedVersion: extVersion ?? app.installedVersion,
                 latestReleaseDate: release.publishedAt,
                 fetchedPackage: packageInfo['packageName'] as String?,
                 lastChecked: DateTime.now(),
@@ -487,6 +504,9 @@ Future<void> _editApp(int index) async {
                 newVersion: release.tagName,
               );
             } else {
+              if (extVersion != null && extVersion != app.installedVersion) {
+                await db.updateApp(app.copyWith(installedVersion: extVersion));
+              }
               progress.completed++;
               progress.failed++;
               
@@ -666,10 +686,13 @@ Future<void> _editApp(int index) async {
         includePrerelease: app.includePrerelease,
       );
       
+      String? extVersion = await ExternalAppChecker.getExternalVersion(app);
+      
       if (packageInfo != null) {
         final release = packageInfo['release'] as Release;
         final updatedApp = app.copyWith(
           latestVersion: release.tagName,
+          installedVersion: extVersion ?? app.installedVersion,
           latestReleaseDate: release.publishedAt,
           fetchedPackage: packageInfo['packageName'] as String?,
           lastChecked: DateTime.now(),
@@ -685,6 +708,11 @@ Future<void> _editApp(int index) async {
           );
         }
       } else {
+        if (extVersion != null) {
+          if (extVersion != app.installedVersion) {
+            await db.updateApp(app.copyWith(installedVersion: extVersion));
+          }
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -787,8 +815,16 @@ for (var index in _selectedIndices) {
           tagPrefix: result['tagPrefix'] as String?,
           architectures: result['architectures'] as List<String>? ?? [],
           includePrerelease: result['includePrerelease'] as bool? ?? false,
+          launchCommand: result['launchCommand'] as String?,
+          packageName: result['packageName'] as String?,
         );
-        _loadApps();
+        await _loadApps();
+        // Trigger an immediate check for the new app
+        final index = _apps.indexWhere((a) => 
+          a.repoOwner == result['owner'] && a.repoName == result['repo']);
+        if (index != -1) {
+          _updateSingleApp(index);
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -59,6 +59,8 @@ class DatabaseService {
     String? tagPrefix,
     List<String> architectures = const [],
     bool includePrerelease = false,
+    String? launchCommand,
+    String? packageName,
   }) async {
     final apps = await getAllApps();
 
@@ -78,6 +80,8 @@ class DatabaseService {
       tagPrefix: tagPrefix,
       architectures: architectures,
       includePrerelease: includePrerelease,
+      launchCommand: launchCommand,
+      packageName: packageName,
     );
 
     apps.add(newApp);

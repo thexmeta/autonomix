@@ -95,8 +95,8 @@ class TrackedApp {
       repoOwner: map['repo_owner'] as String,
       repoName: map['repo_name'] as String,
       displayName: map['display_name'] as String,
-      installedVersion: map['installed_version'] as String?,
-      latestVersion: map['latest_version'] as String?,
+      installedVersion: (map['installed_version'] as String?)?.trim().isEmpty ?? true ? null : map['installed_version'] as String,
+      latestVersion: (map['latest_version'] as String?)?.trim().isEmpty ?? true ? null : map['latest_version'] as String,
       installType: InstallType.fromString(map['install_type'] as String?),
       launchCommand: map['launch_command'] as String?,
       packageName: map['package_name'] as String?,
@@ -113,13 +113,15 @@ class TrackedApp {
     );
   }
 
+  static const _sentinel = Object();
+
   TrackedApp copyWith({
     int? id,
     String? repoOwner,
     String? repoName,
     String? displayName,
-    String? installedVersion,
-    String? latestVersion,
+    Object? installedVersion = _sentinel,
+    Object? latestVersion = _sentinel,
     InstallType? installType,
     String? launchCommand,
     String? packageName,
@@ -137,8 +139,8 @@ class TrackedApp {
       repoOwner: repoOwner ?? this.repoOwner,
       repoName: repoName ?? this.repoName,
       displayName: displayName ?? this.displayName,
-      installedVersion: installedVersion ?? this.installedVersion,
-      latestVersion: latestVersion ?? this.latestVersion,
+      installedVersion: installedVersion == _sentinel ? this.installedVersion : (installedVersion as String?),
+      latestVersion: latestVersion == _sentinel ? this.latestVersion : (latestVersion as String?),
       installType: installType ?? this.installType,
       launchCommand: launchCommand ?? this.launchCommand,
       packageName: packageName ?? this.packageName,

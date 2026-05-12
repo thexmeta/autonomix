@@ -20,6 +20,8 @@ class _AddAppDialogState extends State<AddAppDialog> {
   final _nameController = TextEditingController();
   final _assetFilterController = TextEditingController();
   final _tagPrefixController = TextEditingController();
+  final _launchCommandController = TextEditingController();
+  final _packageNameController = TextEditingController();
   bool _isFetching = false;
   bool _hasFetched = false;
   bool _showFilters = false;
@@ -128,6 +130,8 @@ class _AddAppDialogState extends State<AddAppDialog> {
     _nameController.dispose();
     _assetFilterController.dispose();
     _tagPrefixController.dispose();
+    _launchCommandController.dispose();
+    _packageNameController.dispose();
     super.dispose();
   }
 
@@ -284,6 +288,26 @@ class _AddAppDialogState extends State<AddAppDialog> {
                 },
                 dense: true,
               ),
+              const SizedBox(height: 12),
+              const Text('System Detection (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _launchCommandController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Binary/Launch Command',
+                  hintText: 'e.g., code, discord, br',
+                  helperText: 'Command name to check with "which"',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _packageNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Package Name',
+                  hintText: 'e.g., code-insiders, discord-canary',
+                  helperText: 'Package name to check with "dpkg"',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -319,6 +343,8 @@ class _AddAppDialogState extends State<AddAppDialog> {
                   'tagPrefix': _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
                   'architectures': _selectedArchitectures.toList(),
                   'includePrerelease': _includePrerelease,
+                  'launchCommand': _launchCommandController.text.isEmpty ? null : _launchCommandController.text,
+                  'packageName': _packageNameController.text.isEmpty ? null : _packageNameController.text,
                 });
               }
             },

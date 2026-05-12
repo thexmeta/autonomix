@@ -8,7 +8,12 @@ import 'services/installer_service.dart';
 import 'services/theme_service.dart';
 import 'services/settings_service.dart';
 
-void main() {
+void main(List<String> args) {
+  if (args.contains('--version') || args.contains('-v')) {
+    // Basic CLI support to prevent GUI launch on version check
+    print('Autonomix 0.3.7-b5');
+    return;
+  }
   runApp(const AutonomixApp());
 }
 

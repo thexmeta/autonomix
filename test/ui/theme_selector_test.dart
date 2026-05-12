@@ -3,11 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:autonomix/widgets/theme_selector.dart';
 import 'package:autonomix/services/theme_service.dart';
+import '../mock_services.dart';
 
 void main() {
   group('ThemeSelector', () {
     testWidgets('displays theme options', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -25,7 +26,7 @@ void main() {
     });
 
     testWidgets('shows current theme selection', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -45,7 +46,7 @@ void main() {
     });
 
     testWidgets('calls onThemeChange when theme selected', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
       String? selectedTheme;
 
       await tester.pumpWidget(
@@ -53,11 +54,7 @@ void main() {
           value: themeService,
           child: MaterialApp(
             home: Scaffold(
-              body: ThemeSelector(
-                onThemeChange: (theme) {
-                  selectedTheme = theme;
-                },
-              ),
+              body: ThemeSelector(),
             ),
           ),
         ),
@@ -69,11 +66,11 @@ void main() {
       await tester.pump();
 
       // Verify theme change was triggered
-      expect(selectedTheme, equals('dark'));
+      expect(themeService.theme, equals(AppTheme.dark));
     });
 
     testWidgets('updates UI when theme changes', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -90,7 +87,7 @@ void main() {
       expect(find.byType(ThemeSelector), findsOneWidget);
 
       // Change theme programmatically
-      themeService.setTheme('dark');
+      themeService.setTheme(AppTheme.dark);
       await tester.pump();
 
       // UI should update
@@ -98,7 +95,7 @@ void main() {
     });
 
     testWidgets('displays theme icons', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -118,8 +115,8 @@ void main() {
     });
 
     testWidgets('highlights current theme', (WidgetTester tester) async {
-      final themeService = ThemeService();
-      themeService.setTheme('light');
+      final themeService = ThemeService(settingsService: MockSettingsService());
+      themeService.setTheme(AppTheme.light);
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -137,7 +134,7 @@ void main() {
     });
 
     testWidgets('theme selection is persisted', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -155,11 +152,11 @@ void main() {
       await tester.pump();
 
       // Verify persistence (would be stored in preferences)
-      expect(themeService.currentTheme, equals('dark'));
+      expect(themeService.theme, equals(AppTheme.dark));
     });
 
     testWidgets('displays theme preview', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -177,7 +174,7 @@ void main() {
     });
 
     testWidgets('handles system theme mode', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -194,11 +191,11 @@ void main() {
       await tester.tap(find.textContaining('System'));
       await tester.pump();
 
-      expect(themeService.currentTheme, equals('system'));
+      expect(themeService.theme, equals(AppTheme.system));
     });
 
     testWidgets('theme selector has proper layout', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
@@ -217,7 +214,7 @@ void main() {
     });
 
     testWidgets('theme options are tappable', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
       String? selectedTheme;
 
       await tester.pumpWidget(
@@ -225,11 +222,7 @@ void main() {
           value: themeService,
           child: MaterialApp(
             home: Scaffold(
-              body: ThemeSelector(
-                onThemeChange: (theme) {
-                  selectedTheme = theme;
-                },
-              ),
+              body: ThemeSelector(),
             ),
           ),
         ),
@@ -238,19 +231,19 @@ void main() {
       // Tap each theme option
       await tester.tap(find.textContaining('Light'));
       await tester.pump();
-      expect(selectedTheme, equals('light'));
-
+      expect(themeService.theme, equals(AppTheme.light));
+      
       await tester.tap(find.textContaining('Dark'));
       await tester.pump();
-      expect(selectedTheme, equals('dark'));
-
+      expect(themeService.theme, equals(AppTheme.dark));
+      
       await tester.tap(find.textContaining('System'));
       await tester.pump();
-      expect(selectedTheme, equals('system'));
+      expect(themeService.theme, equals(AppTheme.system));
     });
 
     testWidgets('displays theme descriptions', (WidgetTester tester) async {
-      final themeService = ThemeService();
+      final themeService = ThemeService(settingsService: MockSettingsService());
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ThemeService>.value(
