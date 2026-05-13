@@ -89,7 +89,7 @@ class InstallerService {
           if (res.exitCode == 0) pkgName = res.stdout.toString().trim();
         } catch (_) {}
 
-        await _runPrivileged('dpkg', ['-i', file.path]);
+        await _runPrivileged('apt-get', ['install', '-y', file.path]);
         return (launchCommand: null, packageName: pkgName);
 
       case InstallType.rpm:

@@ -58,3 +58,4 @@ docs/
 .vscode/
 .vscode/settings.json
 scripts/setup-build.sh
+dist/

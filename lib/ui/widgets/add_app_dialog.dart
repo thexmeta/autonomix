@@ -68,8 +68,20 @@ class _AddAppDialogState extends State<AddAppDialog> {
     try {
       final uri = Uri.parse(url);
       
-      // Check if it's a direct deb package URL
-      if (_isDirectUrl || uri.path.endsWith('.deb') || uri.toString().contains('/dl.php') || uri.toString().contains('package=deb')) {
+      // Auto-detect mode from URL
+      final isDirectPackageUrl = uri.path.endsWith('.deb') || 
+                                 uri.toString().contains('/dl.php') || 
+                                 uri.toString().contains('package=deb');
+      final isGitHubRepoUrl = uri.host == 'github.com' && !isDirectPackageUrl;
+
+      // Update mode based on URL detection
+      if (isGitHubRepoUrl && _isDirectUrl) {
+        setState(() => _isDirectUrl = false);
+      } else if (isDirectPackageUrl && !_isDirectUrl) {
+        setState(() => _isDirectUrl = true);
+      }
+
+      if (_isDirectUrl) {
         // Direct deb package URL - extract name from URL
         final filename = uri.path.split('/').last;
         final displayName = filename.isEmpty || filename == '.deb' ? 'Custom Package' : filename.replaceAll('.deb', '');
@@ -78,7 +90,6 @@ class _AddAppDialogState extends State<AddAppDialog> {
         final guessedName = nameGuesses.isNotEmpty ? nameGuesses.first : null;
 
         setState(() {
-          if (!_isDirectUrl) _isDirectUrl = true; // Auto-switch if detected
           if (_nameController.text.trim().isEmpty) {
             _nameController.text = displayName;
           }
@@ -238,117 +249,116 @@ class _AddAppDialogState extends State<AddAppDialog> {
             _error!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
-        if (_hasFetched) ...[
-          if (!_isDirectUrl) ...[
-            TextFormField(
-              controller: _ownerController,
-              decoration: const InputDecoration(labelText: 'Repo Owner'),
-              validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _repoController,
-              decoration: const InputDecoration(labelText: 'Repo Name'),
-              validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-          ],
+        const SizedBox(height: 16),
+        if (!_isDirectUrl) ...[
           TextFormField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Display Name'),
-            validator: (v) => v?.isEmpty == true ? 'Required' : null,
+            controller: _ownerController,
+            decoration: const InputDecoration(labelText: 'Repository Owner'),
+            validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
           ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _repoController,
+            decoration: const InputDecoration(labelText: 'Repository Name'),
+            validator: (v) => !_isDirectUrl && v?.isEmpty == true ? 'Required' : null,
+          ),
+          const SizedBox(height: 12),
+        ],
+        TextFormField(
+          controller: _nameController,
+          decoration: const InputDecoration(labelText: 'Display Name'),
+          validator: (v) => v?.isEmpty == true ? 'Required' : null,
+        ),
+        const SizedBox(height: 16),
+        if (!_isDirectUrl) ...[
           const SizedBox(height: 16),
-          if (!_isDirectUrl) ...[
-            const SizedBox(height: 16),
-            // Asset Filter Pattern - Always visible for easy access
-            TextFormField(
-              controller: _assetFilterController,
-              decoration: const InputDecoration(
-                labelText: 'Asset Filter Pattern',
-                hintText: '*.deb, *amd64*, *linux*',
-                helperText: 'Filter release assets by filename pattern (e.g., *.deb for Debian packages)',
-                prefixIcon: Icon(Icons.filter_alt),
-              ),
+          // Asset Filter Pattern - Always visible for easy access
+          TextFormField(
+            controller: _assetFilterController,
+            decoration: const InputDecoration(
+              labelText: 'Asset Filter Pattern',
+              hintText: '*.deb, *amd64*, *linux*',
+              helperText: 'Filter release assets by filename pattern (e.g., *.deb for Debian packages)',
+              prefixIcon: Icon(Icons.filter_alt),
             ),
-          ],
-          const SizedBox(height: 16),
-          ExpansionTile(
-            title: const Text('Advanced Settings'),
-            subtitle: Text(_isDirectUrl ? 'System detection' : 'Tag prefix, architectures, pre-releases'),
-            initiallyExpanded: _showFilters,
-            onExpansionChanged: (expanded) {
-              setState(() => _showFilters = expanded);
-            },
-            children: [
-              if (!_isDirectUrl) ...[
-                TextFormField(
-                  controller: _tagPrefixController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tag Prefix',
-                    hintText: 'v, release-, app-v, etc.',
-                    helperText: 'Only consider releases with this tag prefix',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text('Architectures', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _availableArchitectures.map((arch) {
-                    final selected = _selectedArchitectures.contains(arch);
-                    return FilterChip(
-                      label: Text(arch),
-                      selected: selected,
-                      onSelected: (_) => _toggleArchitecture(arch),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  title: const Text('Include Pre-releases'),
-                  subtitle: const Text('Allow beta/alpha releases'),
-                  value: _includePrerelease,
-                  onChanged: (v) {
-                    setState(() => _includePrerelease = v ?? false);
-                  },
-                  dense: true,
-                ),
-                const SizedBox(height: 12),
-              ],
-              const Text('System Detection (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+          ),
+        ],
+        const SizedBox(height: 16),
+        ExpansionTile(
+          title: const Text('Advanced Settings'),
+          subtitle: Text(_isDirectUrl ? 'System detection' : 'Tag prefix, architectures, pre-releases'),
+          initiallyExpanded: _showFilters,
+          onExpansionChanged: (expanded) {
+            setState(() => _showFilters = expanded);
+          },
+          children: [
+            if (!_isDirectUrl) ...[
               TextFormField(
-                controller: _launchCommandController,
+                controller: _tagPrefixController,
                 decoration: const InputDecoration(
-                  labelText: 'Custom Binary/Launch Command',
-                  hintText: 'e.g., code, discord, br',
-                  helperText: 'Command name to check with "which"',
+                  labelText: 'Tag Prefix',
+                  hintText: 'v, release-, app-v, etc.',
+                  helperText: 'Only consider releases with this tag prefix',
                 ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _packageNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Custom Package Name',
-                  hintText: 'e.g., code-insiders, discord-canary',
-                  helperText: 'Package name to check with "dpkg"',
-                ),
+              const Text('Architectures', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _availableArchitectures.map((arch) {
+                  final selected = _selectedArchitectures.contains(arch);
+                  return FilterChip(
+                    label: Text(arch),
+                    selected: selected,
+                    onSelected: (_) => _toggleArchitecture(arch),
+                  );
+                }).toList(),
               ),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                title: const Text('Include Pre-releases'),
+                subtitle: const Text('Allow beta/alpha releases'),
+                value: _includePrerelease,
+                onChanged: (v) {
+                  setState(() => _includePrerelease = v ?? false);
+                },
+                dense: true,
+              ),
+              const SizedBox(height: 12),
             ],
-          ),
-          const SizedBox(height: 16),
-          if (!_isDirectUrl)
-            FilterPreview(
-              owner: _ownerController.text,
-              repo: _repoController.text,
-              assetFilterPattern: _assetFilterController.text.isEmpty ? null : _assetFilterController.text,
-              tagPrefix: _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
-              architectures: _selectedArchitectures.toList(),
-              includePrerelease: _includePrerelease,
+            const Text('System Detection (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _launchCommandController,
+              decoration: const InputDecoration(
+                labelText: 'Custom Binary/Launch Command',
+                hintText: 'e.g., code, discord, br',
+                helperText: 'Command name to check with "which"',
+              ),
             ),
-        ],
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _packageNameController,
+              decoration: const InputDecoration(
+                labelText: 'Custom Package Name',
+                hintText: 'e.g., code-insiders, discord-canary',
+                helperText: 'Package name to check with "dpkg"',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (!_isDirectUrl && _hasFetched)
+          FilterPreview(
+            owner: _ownerController.text,
+            repo: _repoController.text,
+            assetFilterPattern: _assetFilterController.text.isEmpty ? null : _assetFilterController.text,
+            tagPrefix: _tagPrefixController.text.isEmpty ? null : _tagPrefixController.text,
+            architectures: _selectedArchitectures.toList(),
+            includePrerelease: _includePrerelease,
+          ),
       ],
     ),
             ),
