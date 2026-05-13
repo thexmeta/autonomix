@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - format: deb
+          - format: debian
             script: ./scripts/create-debian-package.sh
           - format: rpm
             script: ./scripts/create-rpm-package.sh
@@ -32,7 +32,15 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev rpm imagemagick
+          sudo apt-get install -y \
+            clang cmake git ninja-build pkg-config \
+            libgtk-3-dev libblkid-dev liblzma-dev libgcrypt20-dev \
+            libsecret-1-dev libjsoncpp-dev \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            dpkg-dev rpm imagemagick
+
+      - name: Verify Flutter toolchain
+        run: flutter doctor -v
 
       - name: Get Flutter dependencies
         run: flutter pub get
@@ -43,7 +51,7 @@ jobs:
           ${{ matrix.script }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.format }}-package
           path: dist/${{ matrix.format }}-*/**/*
@@ -55,9 +63,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: true
 
       - name: Prepare release files
         run: |
@@ -71,18 +80,16 @@ jobs:
           files: release-files/*
           draft: false
           prerelease: false
+          generate_release_notes: true
           body: |
-            Autonomix Release Build
+            ### 📦 Installation
             
-            This release includes:
-            - **DEB Package**: For Debian/Ubuntu systems
-            - **RPM Package**: For Fedora/RHEL/CentOS systems
-            
-            Installation:
+            **Debian/Ubuntu:**
             ```bash
-            # Debian/Ubuntu
             sudo dpkg -i autonomix_*_amd64.deb
+            ```
             
-            # Fedora/RHEL
+            **Fedora/RHEL/CentOS:**
+            ```bash
             sudo rpm -i autonomix-*.x86_64.rpm
             ```
