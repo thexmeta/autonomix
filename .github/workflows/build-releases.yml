@@ -1,0 +1,88 @@
+name: Build and Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-packages:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - format: deb
+            script: ./scripts/create-debian-package.sh
+          - format: rpm
+            script: ./scripts/create-rpm-package.sh
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          cache: true
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rpm imagemagick
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Build ${{ matrix.format }} package
+        run: |
+          chmod +x ${{ matrix.script }}
+          ${{ matrix.script }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.format }}-package
+          path: dist/${{ matrix.format }}-*/**/*
+          retention-days: 1
+
+  create-release:
+    needs: build-packages
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          find artifacts -type f \( -name "*.deb" -o -name "*.rpm" \) -exec cp {} release-files/ \;
+          ls -lh release-files/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-files/*
+          draft: false
+          prerelease: false
+          body: |
+            Autonomix Release Build
+            
+            This release includes:
+            - **DEB Package**: For Debian/Ubuntu systems
+            - **RPM Package**: For Fedora/RHEL/CentOS systems
+            
+            Installation:
+            ```bash
+            # Debian/Ubuntu
+            sudo dpkg -i autonomix_*_amd64.deb
+            
+            # Fedora/RHEL
+            sudo rpm -i autonomix-*.x86_64.rpm
+            ```

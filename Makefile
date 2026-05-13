@@ -1,7 +1,7 @@
 # Autonomix Makefile
 # Centralized command aliases for Flutter build and Debian packaging
 
-.PHONY: dev build build-deb bump-build bump-patch help
+.PHONY: dev build build-deb build-rpm build-all bump-build bump-patch help
 
 # Default target
 all: help
@@ -20,6 +20,15 @@ build-deb:
 	./scripts/create-debian-package.sh
 	@$(MAKE) bump-build
 
+## RPM Packaging
+build-rpm:
+	chmod +x scripts/create-rpm-package.sh
+	./scripts/create-rpm-package.sh
+	@$(MAKE) bump-build
+
+## Both DEB and RPM
+build-all: build-deb build-rpm
+
 ## Version Management
 bump-build:
 	@./scripts/bump-version.sh --build
@@ -36,6 +45,8 @@ help:
 	@echo "  dev          - Run the application in development mode (Linux)"
 	@echo "  build        - Build the Flutter Linux release bundle"
 	@echo "  build-deb    - Build the Debian package and increment build number (Y)"
+	@echo "  build-rpm    - Build the RPM package and increment build number (Y)"
+	@echo "  build-all    - Build both DEB and RPM packages"
 	@echo "  bump-build   - Manually increment build number (0.3.X-bY -> 0.3.X-bY+1)"
 	@echo "  bump-patch   - Manually increment patch version (0.3.X -> 0.3.X+1, reset bY=1)"
 	@echo "  help         - Show this help message"

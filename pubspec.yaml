@@ -1,7 +1,7 @@
 name: autonomix
 description: A Linux package manager for GitHub releases
 publish_to: 'none'
-version: 0.3.10-b1
+version: 0.3.10-b2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
