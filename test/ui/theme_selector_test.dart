@@ -231,15 +231,15 @@ void main() {
       );
 
       // Tap each theme option
-      await tester.tap(find.descendant(of: find.byType(SegmentedButton<AppTheme>), matching: find.text('Light')));
+      await tester.tap(find.byIcon(Icons.light_mode));
       await tester.pumpAndSettle();
       expect(themeService.theme, equals(AppTheme.light));
       
-      await tester.tap(find.descendant(of: find.byType(SegmentedButton<AppTheme>), matching: find.text('Dark')));
+      await tester.tap(find.byIcon(Icons.dark_mode));
       await tester.pumpAndSettle();
       expect(themeService.theme, equals(AppTheme.dark));
       
-      await tester.tap(find.descendant(of: find.byType(SegmentedButton<AppTheme>), matching: find.text('System')));
+      await tester.tap(find.byIcon(Icons.brightness_auto));
       await tester.pumpAndSettle();
       expect(themeService.theme, equals(AppTheme.system));
     });

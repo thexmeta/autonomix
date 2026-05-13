@@ -185,7 +185,7 @@ void main() {
 
       final json = config.toJson();
       expect(json['schemaVersion'], equals('1.0'));
-      expect(json['exportedAt'], equals('2026-01-01T00:00:00.000'));
+      expect(json['exportedAt'], equals('2026-01-01T00:00:00.000Z'));
       expect(json['appName'], equals('Autonomix'));
       expect(json['appVersion'], equals('0.3.4'));
       expect(json['apps'], isA<List>());

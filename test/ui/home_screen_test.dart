@@ -3,9 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:autonomix/ui/home_screen.dart';
 import 'package:autonomix/services/database_service.dart';
+import 'package:autonomix/services/settings_service.dart';
+import '../mock_services.dart';
 import 'package:autonomix/services/github_service.dart';
 import 'package:autonomix/services/installer_service.dart';
 import 'package:autonomix/models/tracked_app.dart';
+import 'package:autonomix/models/tracked_deb_package.dart';
+import 'package:autonomix/services/external_app_checker.dart';
 
 class MockDatabaseService extends DatabaseService {
   @override
@@ -37,12 +41,33 @@ class MockDatabaseService extends DatabaseService {
   }) async {
     return 1;
   }
+
+  @override
+  Future<List<TrackedDebPackage>> getAllDebPackages() async => [];
+
+  @override
+  Future<void> updateApp(TrackedApp app) async {}
 }
 
-class MockGitHubService extends GitHubService {}
+class MockGitHubService extends GitHubService {
+  @override
+  Future<Map<String, dynamic>?> getLatestReleaseWithPackageInfo(
+    String owner,
+    String repo, {
+    String? assetFilterPattern,
+    String? tagPrefix,
+    List<String>? architectures = const [],
+    bool includePrerelease = false,
+  }) async => null;
+}
 class MockInstallerService extends InstallerService {}
 
 void main() {
+  setUp(() {
+    ExternalAppChecker.versionProvider = (_) async => null;
+    ExternalAppChecker.debVersionProvider = (_) async => null;
+  });
+
   testWidgets('HomeScreen shows apps', (WidgetTester tester) async {
     await tester.pumpWidget(
       MultiProvider(
@@ -50,6 +75,7 @@ void main() {
           Provider<DatabaseService>(create: (_) => MockDatabaseService()),
           Provider<GitHubService>(create: (_) => MockGitHubService()),
           Provider<InstallerService>(create: (_) => MockInstallerService()),
+          Provider<SettingsService>(create: (_) => MockSettingsService()),
         ],
         child: const MaterialApp(
           home: HomeScreen(),
@@ -64,7 +90,7 @@ void main() {
 
     expect(find.text('Test App'), findsOneWidget);
     expect(find.text('owner/repo'), findsOneWidget);
-    expect(find.text('Update Available'), findsOneWidget);
+    expect(find.byIcon(Icons.system_update), findsOneWidget);
   });
 
   testWidgets('Add App dialog opens', (WidgetTester tester) async {
@@ -74,6 +100,7 @@ void main() {
           Provider<DatabaseService>(create: (_) => MockDatabaseService()),
           Provider<GitHubService>(create: (_) => MockGitHubService()),
           Provider<InstallerService>(create: (_) => MockInstallerService()),
+          Provider<SettingsService>(create: (_) => MockSettingsService()),
         ],
         child: const MaterialApp(
           home: HomeScreen(),

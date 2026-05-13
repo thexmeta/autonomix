@@ -20,7 +20,7 @@ void main() {
         ),
       );
 
-      expect(find.text('3 selected'), findsOneWidget);
+      expect(find.text('3 of 10 selected'), findsOneWidget);
     });
 
     testWidgets('displays singular when one selected', (WidgetTester tester) async {
@@ -39,7 +39,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1 selected'), findsOneWidget);
+      expect(find.text('1 of 10 selected'), findsOneWidget);
     });
 
     testWidgets('displays zero when none selected', (WidgetTester tester) async {
@@ -58,7 +58,7 @@ void main() {
         ),
       );
 
-      expect(find.text('0 selected'), findsOneWidget);
+      expect(find.text('0 of 10 selected'), findsOneWidget);
     });
 
     testWidgets('calls onUpdateAll when update button tapped', (WidgetTester tester) async {
@@ -82,7 +82,7 @@ void main() {
       );
 
       // Find and tap the update button
-      final updateButton = find.byIcon(Icons.refresh);
+      final updateButton = find.byIcon(Icons.system_update);
       await tester.tap(updateButton);
       await tester.pump();
 
@@ -141,7 +141,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             bottomSheet: BatchActionBar(
-              selectedCount: 3,
+              selectedCount: 10,
               totalCount: 10,
               onSelectAll: () {},
               onDeselectAll: () {},
@@ -152,7 +152,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.text('Deselect All'), findsOneWidget);
     });
 
     testWidgets('calls onSelectAll when select all button tapped', (WidgetTester tester) async {
@@ -188,7 +188,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             bottomSheet: BatchActionBar(
-              selectedCount: 3,
+              selectedCount: 10,
               totalCount: 10,
               onSelectAll: () {},
               onDeselectAll: () {
@@ -201,7 +201,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.text('Deselect All'));
       await tester.pump();
 
       expect(deselectedAll, isTrue);
@@ -224,12 +224,12 @@ void main() {
       );
 
       // Find buttons
-      final updateButton = find.byIcon(Icons.refresh);
-      final installButton = find.byIcon(Icons.download);
+      final updateButton = find.widgetWithText(FilledButton, 'Update');
+      final installButton = find.widgetWithText(FilledButton, 'Install');
 
       // Verify buttons are enabled
-      expect(tester.widget<IconButton>(updateButton).onPressed, isNotNull);
-      expect(tester.widget<IconButton>(installButton).onPressed, isNotNull);
+      expect(tester.widget<FilledButton>(updateButton).onPressed, isNotNull);
+      expect(tester.widget<FilledButton>(installButton).onPressed, isNotNull);
     });
 
     testWidgets('displays action buttons in row', (WidgetTester tester) async {
@@ -250,7 +250,8 @@ void main() {
 
       // Verify layout
       expect(find.byType(Row), findsWidgets);
-      expect(find.byType(IconButton), findsNWidgets(4)); // Update, Install, Select All, Deselect All
+      expect(find.byType(FilledButton), findsNWidgets(3)); // Update, Install, Delete
+      expect(find.byType(OutlinedButton), findsOneWidget); // Select/Deselect All
     });
 
     testWidgets('shows progress indicator when updating', (WidgetTester tester) async {
@@ -277,7 +278,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(Icons.system_update));
       await tester.pump();
 
       expect(isUpdating, isTrue);
