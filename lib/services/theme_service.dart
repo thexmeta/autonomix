@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'settings_service.dart';
 import 'debug_logger.dart';
@@ -8,21 +9,55 @@ enum AppTheme {
   system,
 }
 
-class ThemeService extends ChangeNotifier {
+class ThemeService extends ChangeNotifier with WidgetsBindingObserver {
   AppTheme _theme = AppTheme.system;
   bool _isDarkMode = false;
   bool _isLoading = true;
   final SettingsService _settingsService;
   final DebugLogger _logger = DebugLogger();
+  late final Future<void> initialization;
 
   AppTheme get theme => _theme;
   bool get isDarkMode => _isDarkMode;
   bool get isLoading => _isLoading;
 
+  ThemeMode get themeMode {
+    switch (_theme) {
+      case AppTheme.light:
+        return ThemeMode.light;
+      case AppTheme.dark:
+        return ThemeMode.dark;
+      case AppTheme.system:
+        return ThemeMode.system;
+    }
+  }
+
   ThemeService({required SettingsService settingsService})
       : _settingsService = settingsService {
-    _logger.log('ThemeService', 'ThemeService created, starting _loadTheme');
-    _loadTheme();
+    _logger.log('ThemeService', 'ThemeService created, starting initialization');
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (e) {
+      _logger.log('ThemeService', 'Could not add observer (expected in unit tests)', data: {'error': e.toString()});
+    }
+    initialization = _loadTheme();
+  }
+
+  @override
+  void dispose() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    _logger.log('ThemeService', 'didChangePlatformBrightness called');
+    if (_theme == AppTheme.system) {
+      _updateSystemTheme();
+      notifyListeners();
+    }
   }
 
   Future<void> _loadTheme() async {
@@ -93,11 +128,21 @@ class ThemeService extends ChangeNotifier {
   void _updateSystemTheme() {
     // Update isDarkMode based on current theme
     if (_theme == AppTheme.system) {
-      // For now, system theme defaults to dark mode
-      // Will be updated to check system preferences in Task 4.2
-      _isDarkMode = true;
+      Brightness? brightness;
+      try {
+        brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+      } catch (_) {
+        try {
+          brightness = PlatformDispatcher.instance.platformBrightness;
+        } catch (_) {
+          brightness = Brightness.light;
+        }
+      }
+      _isDarkMode = brightness == Brightness.dark;
+      _logger.log('ThemeService', '_updateSystemTheme (system)', data: {'brightness': brightness.name, 'isDarkMode': _isDarkMode});
     } else {
       _isDarkMode = _theme == AppTheme.dark;
+      _logger.log('ThemeService', '_updateSystemTheme (manual)', data: {'theme': _theme.name, 'isDarkMode': _isDarkMode});
     }
   }
 

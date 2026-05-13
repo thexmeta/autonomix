@@ -50,7 +50,7 @@ class AutonomixApp extends StatelessWidget {
             title: 'Autonomix',
             theme: themeService.lightTheme,
             darkTheme: themeService.darkTheme,
-            themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: themeService.themeMode,
             home: const HomeScreen(),
           );
         },

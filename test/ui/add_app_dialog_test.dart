@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:autonomix/ui/widgets/add_app_dialog.dart';
+import 'package:provider/provider.dart';
+import 'package:autonomix/services/settings_service.dart';
+import 'package:autonomix/services/github_service.dart';
+import '../mock_services.dart';
 
 void main() {
   group('AddAppDialog', () {
@@ -8,7 +12,12 @@ void main() {
       late Map<String, dynamic>? result;
 
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -23,6 +32,7 @@ void main() {
             ),
           ),
         ),
+        ),
       );
 
       // Tap to show dialog
@@ -36,7 +46,12 @@ void main() {
 
     testWidgets('displays repo name field', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -48,6 +63,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -59,7 +75,12 @@ void main() {
 
     testWidgets('displays asset filter pattern field', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -71,6 +92,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -82,7 +104,12 @@ void main() {
 
     testWidgets('displays tag prefix field', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -94,6 +121,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -105,7 +133,12 @@ void main() {
 
     testWidgets('displays architecture selection', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -118,6 +151,7 @@ void main() {
             ),
           ),
         ),
+        ),
       );
 
       await tester.tap(find.text('Show Dialog'));
@@ -128,7 +162,12 @@ void main() {
 
     testWidgets('displays include prerelease toggle', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -140,6 +179,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -152,7 +192,12 @@ void main() {
 
     testWidgets('displays help text with examples', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -165,6 +210,7 @@ void main() {
             ),
           ),
         ),
+        ),
       );
 
       await tester.tap(find.text('Show Dialog'));
@@ -176,7 +222,12 @@ void main() {
 
     testWidgets('validates required fields', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -188,6 +239,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -205,7 +257,12 @@ void main() {
 
     testWidgets('accepts valid asset filter pattern', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -217,6 +274,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -233,7 +291,12 @@ void main() {
 
     testWidgets('accepts valid tag prefix', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -245,6 +308,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -261,7 +325,12 @@ void main() {
 
     testWidgets('allows multiple architecture selection', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -274,6 +343,7 @@ void main() {
             ),
           ),
         ),
+        ),
       );
 
       await tester.tap(find.text('Show Dialog'));
@@ -285,7 +355,12 @@ void main() {
 
     testWidgets('toggle prerelease switch works', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -297,6 +372,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -314,7 +390,12 @@ void main() {
 
     testWidgets('cancel button closes dialog', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -326,6 +407,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -343,7 +425,12 @@ void main() {
 
     testWidgets('displays filter examples in help text', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -355,6 +442,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
@@ -369,7 +457,12 @@ void main() {
 
     testWidgets('form layout is scrollable', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        MultiProvider(
+          providers: [
+            Provider<SettingsService>.value(value: MockSettingsService()),
+            Provider<GitHubService>.value(value: MockGitHubService()),
+          ],
+          child: MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -381,6 +474,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
 
