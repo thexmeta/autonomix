@@ -21,8 +21,12 @@ ARCH="amd64"
 MAINTAINER="Autonomix Team"
 DESCRIPTION="A Linux package manager for GitHub releases"
 
-# Flutter path (FVM)
-FLUTTER_PATH="/home/mxadm/fvm/versions/stable/bin/flutter"
+# Flutter path (detect system flutter or use hardcoded local path as fallback)
+if command -v flutter &> /dev/null; then
+    FLUTTER_PATH=$(which flutter)
+else
+    FLUTTER_PATH="/home/mxadm/fvm/versions/stable/bin/flutter"
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -60,13 +64,13 @@ check_dependencies() {
 build_flutter() {
     log_step "Building Flutter Linux release..."
     
-    cd "$PROJECT_DIR"
-    
-    log_info "Cleaning Flutter cache..."
-    "$FLUTTER_PATH" clean
-    
-    log_info "Getting dependencies..."
-    "$FLUTTER_PATH" pub get
+    log_info "Preparing Flutter build..."
+    if [ "$GITHUB_ACTIONS" != "true" ]; then
+        log_info "Cleaning Flutter cache..."
+        "$FLUTTER_PATH" clean
+        log_info "Getting dependencies..."
+        "$FLUTTER_PATH" pub get
+    fi
     
     "$FLUTTER_PATH" build linux --release
     
