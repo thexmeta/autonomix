@@ -62,9 +62,39 @@ class TrackedApp {
   }
 
   static bool _isNewerVersion(String newVersion, String oldVersion) {
-    // Simple string comparison for now, mimicking the fallback in Rust
-    // A real implementation would use a semver library
-    return newVersion.compareTo(oldVersion) > 0;
+    try {
+      final newParts = _parseVersion(newVersion);
+      final oldParts = _parseVersion(oldVersion);
+      
+      for (var i = 0; i < 3; i++) {
+        if (newParts[i] > oldParts[i]) return true;
+        if (newParts[i] < oldParts[i]) return false;
+      }
+      
+      // If major.minor.patch are equal, check if one is a prerelease
+      // A release version (no dash) is newer than a prerelease (has dash)
+      final newIsPrerelease = newVersion.contains('-');
+      final oldIsPrerelease = oldVersion.contains('-');
+      
+      if (!newIsPrerelease && oldIsPrerelease) return true;
+      if (newIsPrerelease && !oldIsPrerelease) return false;
+      
+      // If both are prereleases, fallback to string comparison for the suffix
+      return newVersion.compareTo(oldVersion) > 0;
+    } catch (e) {
+      // Fallback to lexicographical if parsing fails
+      return newVersion.compareTo(oldVersion) > 0;
+    }
+  }
+
+  static List<int> _parseVersion(String version) {
+    // Remove v-prefix and any prerelease suffix for number parsing
+    final clean = version.split('-').first.replaceAll(RegExp(r'[^0-9.]'), '');
+    final parts = clean.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    while (parts.length < 3) {
+      parts.add(0);
+    }
+    return parts.sublist(0, 3);
   }
 
   Map<String, dynamic> toMap() {

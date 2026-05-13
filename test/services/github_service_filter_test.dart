@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:autonomix/services/github_service.dart';
 import 'package:autonomix/models/release.dart';
+import '../mocks/mock_github_service.dart';
 
 void main() {
   group('GitHubService filterAssets', () {
@@ -155,16 +156,40 @@ void main() {
   });
 
   group('GitHubService getLatestRelease with filters', () {
-    test('filters releases by tag prefix', () {
-      final service = GitHubService();
-      // This would require mocking the HTTP calls
-      // Marked for future implementation with mock setup
+    test('filters releases by tag prefix', () async {
+      final mockGitHub = MockGitHubService();
+      mockGitHub.setReleases([
+        Release(tagName: 'v1.0.0', assets: [ReleaseAsset(name: 'a.deb', browserDownloadUrl: '', contentType: '', size: 0)], prerelease: false, draft: false),
+        Release(tagName: 'app-2.0.0', assets: [ReleaseAsset(name: 'b.deb', browserDownloadUrl: '', contentType: '', size: 0)], prerelease: false, draft: false),
+      ]);
+
+      // Match 'app' prefix
+      var result = await mockGitHub.getLatestRelease('o', 'r', tagPrefix: 'app');
+      expect(result?.tagName, equals('app-2.0.0'));
+
+      // Match 'v' prefix
+      result = await mockGitHub.getLatestRelease('o', 'r', tagPrefix: 'v');
+      expect(result?.tagName, equals('v1.0.0'));
+      
+      // Case insensitive match
+      result = await mockGitHub.getLatestRelease('o', 'r', tagPrefix: 'APP');
+      expect(result?.tagName, equals('app-2.0.0'));
     });
 
-    test('handles prerelease filtering', () {
-      final service = GitHubService();
-      // This would require mocking the HTTP calls
-      // Marked for future implementation with mock setup
+    test('handles prerelease filtering', () async {
+      final mockGitHub = MockGitHubService();
+      mockGitHub.setReleases([
+        Release(tagName: 'v2.0.0-beta', assets: [ReleaseAsset(name: 'a.deb', browserDownloadUrl: '', contentType: '', size: 0)], prerelease: true, draft: false),
+        Release(tagName: 'v1.0.0', assets: [ReleaseAsset(name: 'b.deb', browserDownloadUrl: '', contentType: '', size: 0)], prerelease: false, draft: false),
+      ]);
+
+      // Should exclude prerelease by default
+      var result = await mockGitHub.getLatestRelease('o', 'r', includePrerelease: false);
+      expect(result?.tagName, equals('v1.0.0'));
+
+      // Should include prerelease when requested
+      result = await mockGitHub.getLatestRelease('o', 'r', includePrerelease: true);
+      expect(result?.tagName, equals('v2.0.0-beta'));
     });
   });
 }

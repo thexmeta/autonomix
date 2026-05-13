@@ -40,8 +40,10 @@ class MockGitHubService extends GitHubService {
       if (!includePrerelease && release.prerelease) {
         return false;
       }
-      if (tagPrefix != null && tagPrefix.isNotEmpty) {
-        if (!release.tagName.startsWith(tagPrefix)) {
+      if (tagPrefix != null && tagPrefix.trim().isNotEmpty) {
+        final searchPrefix = tagPrefix.trim().toLowerCase();
+        final lowerTag = release.tagName.toLowerCase();
+        if (!lowerTag.contains(searchPrefix)) {
           return false;
         }
       }

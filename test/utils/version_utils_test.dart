@@ -157,7 +157,20 @@ void main() {
       expect(app.hasUpdate, isTrue);
     });
 
-    test('handles prerelease versions', () {
+    test('handles versions with multi-digit numbers (SemVer check)', () {
+      final app = TrackedApp(
+        repoOwner: 'owner',
+        repoName: 'repo',
+        displayName: 'Test App',
+        installedVersion: '1.0.2',
+        latestVersion: '1.0.10',
+        createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
+      );
+
+      expect(app.hasUpdate, isTrue);
+    });
+
+    test('handles prerelease versions properly', () {
       final app = TrackedApp(
         repoOwner: 'owner',
         repoName: 'repo',
@@ -167,8 +180,7 @@ void main() {
         createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
       );
 
-      // Note: Current implementation uses string comparison
-      // This test documents current behavior
+      // Release version should be newer than prerelease
       expect(app.hasUpdate, isTrue);
     });
   });
